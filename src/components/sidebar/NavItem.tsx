@@ -1,6 +1,7 @@
 
 import React from 'react';
 import { cn } from "@/lib/utils";
+import { Link } from 'react-router-dom';
 
 interface NavItemProps {
   icon: React.ReactNode;
@@ -9,9 +10,9 @@ interface NavItemProps {
   isActive?: boolean;
 }
 
-export function NavItem({ icon, label, href = "#", isActive = false }: NavItemProps) {
+export function NavItem({ icon, label, href = "/", isActive = false }: NavItemProps) {
   return (
-    <a href={href} className={cn(
+    <Link to={href} className={cn(
       "flex items-center py-2 px-3 rounded-md my-1 transition-colors",
       isActive ? "bg-[hsl(var(--attune-light-purple))] text-white" : "text-gray-700 hover:bg-gray-100"
     )}>
@@ -19,6 +20,6 @@ export function NavItem({ icon, label, href = "#", isActive = false }: NavItemPr
         {icon}
       </div>
       <span className="ml-3 text-sm font-medium">{label}</span>
-    </a>
+    </Link>
   );
 }

@@ -6,8 +6,11 @@ import { NavItem } from './NavItem';
 import { SidebarSection } from './SidebarSection';
 import { ProfileSection } from './ProfileSection';
 import { Home, FileText, Users, Settings } from 'lucide-react';
+import { useLocation } from 'react-router-dom';
 
 export function AttuneSidebar() {
+  const location = useLocation();
+  
   // Mock data for student cards
   const students = [
     {
@@ -31,7 +34,7 @@ export function AttuneSidebar() {
   ];
 
   return (
-    <aside className="w-64 h-screen bg-white border-r border-purple-300 flex flex-col">
+    <aside className="w-64 h-screen bg-white border-r border-purple-100 flex flex-col">
       {/* Header */}
       <div className="p-4 flex items-center">
         <AttuneIcon />
@@ -54,9 +57,24 @@ export function AttuneSidebar() {
 
         {/* Navigation Section */}
         <SidebarSection title="Navigation">
-          <NavItem icon={<Home size={18} />} label="Home" isActive={true} />
-          <NavItem icon={<FileText size={18} />} label="Collaboration" />
-          <NavItem icon={<Users size={18} />} label="Analytics" />
+          <NavItem 
+            icon={<Home size={18} />} 
+            label="Home" 
+            href="/"
+            isActive={location.pathname === '/'}
+          />
+          <NavItem 
+            icon={<FileText size={18} />} 
+            label="Collaboration"
+            href="/collaboration"
+            isActive={location.pathname === '/collaboration'}
+          />
+          <NavItem 
+            icon={<Users size={18} />} 
+            label="Analytics"
+            href="/analytics"
+            isActive={location.pathname === '/analytics'}
+          />
           <NavItem 
             icon={
               <svg width="18" height="18" viewBox="0 0 21 21" xmlns="http://www.w3.org/2000/svg">
@@ -81,7 +99,9 @@ export function AttuneSidebar() {
                 </defs>
               </svg>
             } 
-            label="Start New Recording" 
+            label="Start New Recording"
+            href="/recording"
+            isActive={location.pathname === '/recording'}
           />
         </SidebarSection>
       </div>
