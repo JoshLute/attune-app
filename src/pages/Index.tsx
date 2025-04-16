@@ -1,11 +1,14 @@
-// Update this page (the content is just a fallback if you fail to update the page)
+
+import React from 'react';
+import { AttuneSidebar } from '@/components/sidebar/AttuneSidebar';
 
 const Index = () => {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100">
-      <div className="text-center">
-        <h1 className="text-4xl font-bold mb-4">Welcome to Your Blank App</h1>
-        <p className="text-xl text-gray-600">Start building your amazing project here!</p>
+    <div className="flex h-screen bg-gray-100">
+      <AttuneSidebar />
+      <div className="flex-1 p-8">
+        <h1 className="text-2xl font-bold mb-6">Welcome to Attune</h1>
+        <p>Select a student from the sidebar to view their details.</p>
       </div>
     </div>
   );
