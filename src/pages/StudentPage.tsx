@@ -57,29 +57,74 @@ const studentsData: Record<string, StudentData> = {
   }
 };
 
-// Mock data for student analytics - different for each student
+// Mock data for student analytics - different for each student and timeframes
 const analyticsDataByStudent = {
-  'jonathan': [
-    { timestamp: 'Mon', attention: 85, understanding: 70 },
-    { timestamp: 'Tue', attention: 90, understanding: 75 },
-    { timestamp: 'Wed', attention: 88, understanding: 80 },
-    { timestamp: 'Thu', attention: 92, understanding: 85 },
-    { timestamp: 'Fri', attention: 95, understanding: 90 },
-  ],
-  'jp': [
-    { timestamp: 'Mon', attention: 45, understanding: 35 },
-    { timestamp: 'Tue', attention: 30, understanding: 20 },
-    { timestamp: 'Wed', attention: 25, understanding: 15 },
-    { timestamp: 'Thu', attention: 40, understanding: 30 },
-    { timestamp: 'Fri', attention: 35, understanding: 25 },
-  ],
-  'cooper': [
-    { timestamp: 'Mon', attention: 60, understanding: 50 },
-    { timestamp: 'Tue', attention: 40, understanding: 45 },
-    { timestamp: 'Wed', attention: 35, understanding: 30 },
-    { timestamp: 'Thu', attention: 30, understanding: 25 },
-    { timestamp: 'Fri', attention: 45, understanding: 40 },
-  ],
+  'jonathan': {
+    'day': [
+      { timestamp: '9:00 AM', attention: 85, understanding: 75 },
+      { timestamp: '10:00 AM', attention: 90, understanding: 80 },
+      { timestamp: '11:00 AM', attention: 80, understanding: 70 },
+      { timestamp: '1:00 PM', attention: 95, understanding: 85 },
+      { timestamp: '2:00 PM', attention: 85, understanding: 90 },
+    ],
+    'week': [
+      { timestamp: 'Mon', attention: 85, understanding: 70 },
+      { timestamp: 'Tue', attention: 90, understanding: 75 },
+      { timestamp: 'Wed', attention: 88, understanding: 80 },
+      { timestamp: 'Thu', attention: 92, understanding: 85 },
+      { timestamp: 'Fri', attention: 95, understanding: 90 },
+    ],
+    'month': [
+      { timestamp: 'Week 1', attention: 80, understanding: 75 },
+      { timestamp: 'Week 2', attention: 85, understanding: 80 },
+      { timestamp: 'Week 3', attention: 90, understanding: 85 },
+      { timestamp: 'Week 4', attention: 95, understanding: 90 },
+    ],
+  },
+  'jp': {
+    'day': [
+      { timestamp: '9:00 AM', attention: 40, understanding: 30 },
+      { timestamp: '10:00 AM', attention: 35, understanding: 25 },
+      { timestamp: '11:00 AM', attention: 30, understanding: 20 },
+      { timestamp: '1:00 PM', attention: 25, understanding: 15 },
+      { timestamp: '2:00 PM', attention: 45, understanding: 35 },
+    ],
+    'week': [
+      { timestamp: 'Mon', attention: 45, understanding: 35 },
+      { timestamp: 'Tue', attention: 30, understanding: 20 },
+      { timestamp: 'Wed', attention: 25, understanding: 15 },
+      { timestamp: 'Thu', attention: 40, understanding: 30 },
+      { timestamp: 'Fri', attention: 35, understanding: 25 },
+    ],
+    'month': [
+      { timestamp: 'Week 1', attention: 50, understanding: 40 },
+      { timestamp: 'Week 2', attention: 40, understanding: 30 },
+      { timestamp: 'Week 3', attention: 30, understanding: 20 },
+      { timestamp: 'Week 4', attention: 35, understanding: 25 },
+    ],
+  },
+  'cooper': {
+    'day': [
+      { timestamp: '9:00 AM', attention: 55, understanding: 45 },
+      { timestamp: '10:00 AM', attention: 40, understanding: 35 },
+      { timestamp: '11:00 AM', attention: 30, understanding: 25 },
+      { timestamp: '1:00 PM', attention: 35, understanding: 30 },
+      { timestamp: '2:00 PM', attention: 45, understanding: 40 },
+    ],
+    'week': [
+      { timestamp: 'Mon', attention: 60, understanding: 50 },
+      { timestamp: 'Tue', attention: 40, understanding: 45 },
+      { timestamp: 'Wed', attention: 35, understanding: 30 },
+      { timestamp: 'Thu', attention: 30, understanding: 25 },
+      { timestamp: 'Fri', attention: 45, understanding: 40 },
+    ],
+    'month': [
+      { timestamp: 'Week 1', attention: 55, understanding: 50 },
+      { timestamp: 'Week 2', attention: 45, understanding: 40 },
+      { timestamp: 'Week 3', attention: 40, understanding: 35 },
+      { timestamp: 'Week 4', attention: 50, understanding: 45 },
+    ],
+  },
 };
 
 // Student-specific AI suggestions
@@ -116,6 +161,7 @@ const StudentPage = () => {
   const { studentId } = useParams<{ studentId: string }>();
   const student = studentId ? studentsData[studentId] : null;
   const [notes, setNotes] = useState(student?.notes || '');
+  const [timeRange, setTimeRange] = useState<'day' | 'week' | 'month'>('day');
   const { toast } = useToast();
 
   if (!student) {
@@ -165,8 +211,11 @@ const StudentPage = () => {
     understanding: { theme: { light: "#ADD8E6", dark: "#1E90FF" } }
   };
 
-  // Get student-specific chart data
-  const chartData = analyticsDataByStudent[studentId as keyof typeof analyticsDataByStudent] || [];
+  // Get student-specific chart data for the selected time range
+  const chartData = studentId && analyticsDataByStudent[studentId] 
+    ? analyticsDataByStudent[studentId][timeRange]
+    : [];
+    
   const studentSuggestions = aiSuggestionsByStudent[studentId as keyof typeof aiSuggestionsByStudent] || [];
 
   // Calculate understanding percentage based on the most recent data point
@@ -188,6 +237,20 @@ const StudentPage = () => {
   };
   
   const timeProps = getTimeProps();
+  
+  // Get time range title
+  const getTimeRangeTitle = () => {
+    switch(timeRange) {
+      case 'day':
+        return "Today's Progress";
+      case 'week':
+        return "Weekly Progress";
+      case 'month':
+        return "Monthly Progress";
+      default:
+        return "Progress";
+    }
+  };
 
   return (
     <div className="flex h-screen bg-white">
@@ -221,9 +284,39 @@ const StudentPage = () => {
           
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
             <div className="lg:col-span-2 rounded-3xl p-6 bg-gray-50 shadow-[5px_5px_15px_rgba(0,0,0,0.05),_-5px_-5px_15px_rgba(255,255,255,0.8)]">
-              <div className="flex items-center mb-4">
-                <BookOpen className="mr-2 text-[hsl(var(--attune-purple))]" />
-                <h2 className="text-xl font-semibold text-[hsl(var(--attune-purple))]">{student.name}'s Progress</h2>
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center">
+                  <BookOpen className="mr-2 text-[hsl(var(--attune-purple))]" />
+                  <h2 className="text-xl font-semibold text-[hsl(var(--attune-purple))]">{student.name}'s {getTimeRangeTitle()}</h2>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="flex rounded-lg overflow-hidden shadow-[2px_2px_5px_rgba(0,0,0,0.08)]">
+                    <Button
+                      variant={timeRange === 'day' ? 'default' : 'outline'}
+                      className={`rounded-r-none border-r-0 ${timeRange === 'day' ? 'bg-[hsl(var(--attune-purple))]' : ''}`}
+                      size="sm"
+                      onClick={() => setTimeRange('day')}
+                    >
+                      Day
+                    </Button>
+                    <Button
+                      variant={timeRange === 'week' ? 'default' : 'outline'}
+                      className={`rounded-none border-x-0 ${timeRange === 'week' ? 'bg-[hsl(var(--attune-purple))]' : ''}`}
+                      size="sm"
+                      onClick={() => setTimeRange('week')}
+                    >
+                      Week
+                    </Button>
+                    <Button
+                      variant={timeRange === 'month' ? 'default' : 'outline'}
+                      className={`rounded-l-none border-l-0 ${timeRange === 'month' ? 'bg-[hsl(var(--attune-purple))]' : ''}`}
+                      size="sm"
+                      onClick={() => setTimeRange('month')}
+                    >
+                      Month
+                    </Button>
+                  </div>
+                </div>
               </div>
               <div className="h-[300px] w-full">
                 <ChartContainer
@@ -266,7 +359,7 @@ const StudentPage = () => {
               <Card className="rounded-2xl overflow-hidden shadow-[5px_5px_15px_rgba(0,0,0,0.05),_-5px_-5px_15px_rgba(255,255,255,0.8)] border border-purple-100">
                 <CardHeader className="bg-[hsl(var(--attune-light-purple))] text-white pb-3">
                   <CardTitle className="text-xl">Summary</CardTitle>
-                  <CardDescription className="text-white text-opacity-80">Weekly Performance</CardDescription>
+                  <CardDescription className="text-white text-opacity-80">{getTimeRangeTitle()}</CardDescription>
                 </CardHeader>
                 <CardContent className="pt-4">
                   <div className="flex justify-between items-center mb-2">
