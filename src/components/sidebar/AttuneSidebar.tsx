@@ -14,19 +14,19 @@ export function AttuneSidebar() {
   // Mock data for student cards
   const students = [
     {
-      id: 1,
+      id: 'jonathan',
       name: 'Jonathan Sum',
       status: 'attentive' as const,
       avatarUrl: 'https://api.dicebear.com/7.x/personas/svg?seed=jonathan'
     },
     {
-      id: 2,
+      id: 'jp',
       name: 'JP Vela',
       status: 'confused' as const,
       avatarUrl: 'https://api.dicebear.com/7.x/personas/svg?seed=jp'
     },
     {
-      id: 3,
+      id: 'cooper',
       name: 'Cooper Randeen',
       status: 'inattentive' as const,
       avatarUrl: 'https://api.dicebear.com/7.x/personas/svg?seed=cooper'
@@ -34,7 +34,7 @@ export function AttuneSidebar() {
   ];
 
   return (
-    <aside className="w-64 h-screen bg-white border-r border-purple-100 flex flex-col">
+    <aside className="w-64 h-screen bg-gray-50 border-r border-purple-100 flex flex-col shadow-[5px_0_15px_rgba(0,0,0,0.05)]">
       {/* Header */}
       <div className="p-4 flex items-center">
         <AttuneIcon />
@@ -48,6 +48,7 @@ export function AttuneSidebar() {
           {students.map(student => (
             <StudentCard 
               key={student.id}
+              id={student.id}
               name={student.name}
               status={student.status}
               avatarUrl={student.avatarUrl}

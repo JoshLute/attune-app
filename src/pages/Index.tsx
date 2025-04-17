@@ -3,8 +3,6 @@ import React from 'react';
 import { AttuneSidebar } from '@/components/sidebar/AttuneSidebar';
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from '@/components/ui/carousel';
 import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
-import { Settings } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 const SessionCard = ({ 
@@ -18,8 +16,8 @@ const SessionCard = ({
   confusedPercent: number;
   keyMoments: number;
 }) => (
-  <div className="rounded-3xl p-5 bg-[hsl(var(--attune-light-purple))] text-white text-center min-w-[280px] flex flex-col gap-2">
-    <div className="bg-white text-[hsl(var(--attune-purple))] rounded-xl py-2 font-medium">
+  <div className="rounded-3xl p-5 bg-[hsl(var(--attune-light-purple))] text-white text-center min-w-[280px] flex flex-col gap-2 shadow-[5px_5px_15px_rgba(0,0,0,0.1),_-5px_-5px_15px_rgba(255,255,255,0.8)] hover:shadow-[3px_3px_10px_rgba(0,0,0,0.08),_-3px_-3px_10px_rgba(255,255,255,0.7)] transition-all duration-300">
+    <div className="bg-white text-[hsl(var(--attune-purple))] rounded-xl py-2 font-medium shadow-inner">
       {date}
     </div>
     <div className="text-2xl font-semibold mt-2">
@@ -78,11 +76,13 @@ const Index = () => {
           </div>
 
           <div className="flex flex-col md:flex-row gap-6">
-            <Button variant="outline" size="lg" className="flex-1 py-8 text-xl rounded-3xl border-2 shadow-lg hover:bg-[hsl(var(--attune-light-purple))] hover:text-white hover:border-[hsl(var(--attune-purple))]">
-              <div className="text-[hsl(var(--attune-purple))] text-2xl font-bold">Start New Recording</div>
-            </Button>
+            <Link to="/recording" className="flex-1">
+              <Button variant="outline" size="lg" className="w-full py-8 text-xl rounded-3xl border-2 shadow-[5px_5px_15px_rgba(0,0,0,0.1),_-5px_-5px_15px_rgba(255,255,255,0.8)] hover:shadow-[2px_2px_5px_rgba(0,0,0,0.08),_-2px_-2px_5px_rgba(255,255,255,0.7)] hover:translate-y-[-2px] transition-all duration-300 bg-gray-50 hover:bg-[hsl(var(--attune-light-purple))] hover:text-white hover:border-[hsl(var(--attune-purple))]">
+                <div className="text-[hsl(var(--attune-purple))] text-2xl font-bold">Start New Recording</div>
+              </Button>
+            </Link>
             
-            <Button variant="outline" size="lg" className="flex-1 py-8 text-xl rounded-3xl border-2 shadow-lg hover:bg-[hsl(var(--attune-light-purple))] hover:text-white hover:border-[hsl(var(--attune-purple))]">
+            <Button variant="outline" size="lg" className="flex-1 py-8 text-xl rounded-3xl border-2 shadow-[5px_5px_15px_rgba(0,0,0,0.1),_-5px_-5px_15px_rgba(255,255,255,0.8)] hover:shadow-[2px_2px_5px_rgba(0,0,0,0.08),_-2px_-2px_5px_rgba(255,255,255,0.7)] hover:translate-y-[-2px] transition-all duration-300 bg-gray-50 hover:bg-[hsl(var(--attune-light-purple))] hover:text-white hover:border-[hsl(var(--attune-purple))]">
               <div className="text-[hsl(var(--attune-purple))] text-2xl font-bold flex items-center gap-2">
                 Settings
               </div>
