@@ -103,7 +103,9 @@ export const generateAndDownloadReport = (
   const lowUnderstandingSegments = lessonOutline.filter(segment => segment.status === 'confused');
   
   if (lowUnderstandingSegments.length > 0) {
-    yPos = doc.autoTable.previous.finalY + 20;
+    // Fix: Access the finalY property properly
+    const tableDetails = doc.previousAutoTable || {};
+    yPos = (tableDetails.finalY || 30) + 20;
     
     doc.setFontSize(16);
     doc.text("Areas That Need Review", 14, yPos);
