@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { AttuneSidebar } from '@/components/sidebar/AttuneSidebar';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
@@ -9,6 +8,7 @@ import { Separator } from '@/components/ui/separator';
 import { Button } from '@/components/ui/button';
 import { BookOpen, Activity, AlertTriangle, Eye, Lightbulb, Download, FileText } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { generateAndDownloadReport } from '@/utils/reportGenerator';
 
 // Mock data for the analytics chart
 const analyticsDataToday = [
@@ -217,12 +217,17 @@ const AnalyticsPage = () => {
   };
 
   const handleDownloadReport = () => {
-    // In a real app, this would generate a PDF with the report data
+    // Generate and download the PDF report
+    generateAndDownloadReport(
+      getDataByTimeRange(),
+      lessonOutline,
+      "Lesson Summary Report"
+    );
+    
     toast({
-      title: "Report Downloaded",
+      title: "Report Generated",
       description: "Your lesson summary report has been downloaded",
     });
-    console.log("Downloading report...");
   };
   
   return (
