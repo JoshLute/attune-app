@@ -1,70 +1,74 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { AttuneSidebar } from "@/components/sidebar/AttuneSidebar";
-import { StudentConnectionStatus } from "@/components/recording/StudentConnectionStatus";
-import { CurriculumUpload } from "@/components/recording/CurriculumUpload";
 import { Button } from "@/components/ui/button";
-import { PlayCircle } from "lucide-react";
+import { StudentRecordingCard } from "@/components/recording/StudentRecordingCard";
+import { useToast } from "@/hooks/use-toast";
+
+type StudentStatus = 'Attentive' | 'Confused' | 'Inattentive';
+
+interface Student {
+  id: string;
+  name: string;
+  status: StudentStatus;
+  avatarUrl: string;
+}
 
 const RecordingPage = () => {
-  // Mock data - in a real app this would come from your backend
-  const students = [
+  const { toast } = useToast();
+  const [students] = useState<Student[]>([
     {
+      id: "jonathan",
       name: "Jonathan Sum",
-      isConnected: true,
+      status: "Attentive",
       avatarUrl: "https://api.dicebear.com/7.x/personas/svg?seed=jonathan"
     },
     {
+      id: "jp",
       name: "JP Vela",
-      isConnected: false,
+      status: "Confused",
       avatarUrl: "https://api.dicebear.com/7.x/personas/svg?seed=jp"
     },
     {
+      id: "cooper",
       name: "Cooper Randeen",
-      isConnected: false,
+      status: "Inattentive",
       avatarUrl: "https://api.dicebear.com/7.x/personas/svg?seed=cooper"
     }
-  ];
+  ]);
+
+  const handleBehaviorTag = (studentName: string, tag: string) => {
+    toast({
+      title: "Behavior Tagged",
+      description: `${studentName} marked as "${tag}"`,
+    });
+  };
 
   return (
     <div className="flex h-screen bg-white">
       <AttuneSidebar />
       <div className="flex-1 p-8 overflow-y-auto">
         <div className="max-w-4xl mx-auto">
-          <h1 className="text-3xl font-bold text-[hsl(var(--attune-purple))] mb-6">Start New Recording</h1>
+          <div className="flex justify-between items-center mb-6">
+            <h1 className="text-3xl font-bold text-[hsl(var(--attune-purple))]">In Session</h1>
+            <Button 
+              variant="default"
+              className="bg-[#9b87f5] hover:bg-[#7E69AB]"
+            >
+              End Session
+            </Button>
+          </div>
           
-          <div className="grid gap-8">
-            {/* Student Connections Section */}
-            <div className="rounded-3xl p-8 bg-gray-50 shadow-[5px_5px_15px_rgba(0,0,0,0.05),_-5px_-5px_15px_rgba(255,255,255,0.8)]">
-              <h2 className="text-xl font-semibold mb-4">Student Connections</h2>
-              <div className="space-y-2">
-                {students.map((student) => (
-                  <StudentConnectionStatus
-                    key={student.name}
-                    name={student.name}
-                    isConnected={student.isConnected}
-                    avatarUrl={student.avatarUrl}
-                  />
-                ))}
-              </div>
-            </div>
-
-            {/* Curriculum Upload Section */}
-            <div className="rounded-3xl p-8 bg-gray-50 shadow-[5px_5px_15px_rgba(0,0,0,0.05),_-5px_-5px_15px_rgba(255,255,255,0.8)]">
-              <h2 className="text-xl font-semibold mb-4">Upload Curriculum</h2>
-              <CurriculumUpload />
-            </div>
-
-            {/* Start Recording Button */}
-            <div className="flex justify-center">
-              <Button 
-                size="lg"
-                className="bg-[hsl(var(--attune-purple))] hover:bg-[hsl(var(--attune-purple))/0.9] text-white px-8 py-6 text-lg rounded-xl"
-              >
-                <PlayCircle className="mr-2 h-6 w-6" />
-                Start Recording
-              </Button>
-            </div>
+          <div className="space-y-4">
+            {students.map((student) => (
+              <StudentRecordingCard
+                key={student.id}
+                name={student.name}
+                avatarUrl={student.avatarUrl}
+                currentStatus={student.status}
+                onTagClick={(tag) => handleBehaviorTag(student.name, tag)}
+              />
+            ))}
           </div>
         </div>
       </div>
