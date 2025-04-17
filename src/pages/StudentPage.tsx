@@ -2,10 +2,15 @@
 import React, { useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { AttuneSidebar } from '@/components/sidebar/AttuneSidebar';
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
+import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
+import { Separator } from '@/components/ui/separator';
+import { BookOpen, Activity, AlertTriangle, Eye, Download, FileText, Lightbulb } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { Eye, AlertTriangle, Activity } from 'lucide-react';
 
 interface StudentData {
   id: number;
@@ -52,6 +57,61 @@ const studentsData: Record<string, StudentData> = {
   }
 };
 
+// Mock data for student analytics - different for each student
+const analyticsDataByStudent = {
+  'jonathan': [
+    { timestamp: 'Mon', attention: 85, understanding: 70 },
+    { timestamp: 'Tue', attention: 90, understanding: 75 },
+    { timestamp: 'Wed', attention: 88, understanding: 80 },
+    { timestamp: 'Thu', attention: 92, understanding: 85 },
+    { timestamp: 'Fri', attention: 95, understanding: 90 },
+  ],
+  'jp': [
+    { timestamp: 'Mon', attention: 45, understanding: 35 },
+    { timestamp: 'Tue', attention: 30, understanding: 20 },
+    { timestamp: 'Wed', attention: 25, understanding: 15 },
+    { timestamp: 'Thu', attention: 40, understanding: 30 },
+    { timestamp: 'Fri', attention: 35, understanding: 25 },
+  ],
+  'cooper': [
+    { timestamp: 'Mon', attention: 60, understanding: 50 },
+    { timestamp: 'Tue', attention: 40, understanding: 45 },
+    { timestamp: 'Wed', attention: 35, understanding: 30 },
+    { timestamp: 'Thu', attention: 30, understanding: 25 },
+    { timestamp: 'Fri', attention: 45, understanding: 40 },
+  ],
+};
+
+// Student-specific AI suggestions
+const aiSuggestionsByStudent = {
+  'jonathan': [
+    "Jonathan responds well to visual learning materials",
+    "Consider giving Jonathan more advanced challenges to maintain engagement"
+  ],
+  'jp': [
+    "Break down complex topics into smaller chunks for JP",
+    "JP would benefit from additional practice problems with step-by-step solutions"
+  ],
+  'cooper': [
+    "Cooper engages more during interactive activities",
+    "Try seating Cooper away from distractions and closer to the front of class"
+  ],
+};
+
+// Helper to determine the status icon
+const StatusIcon = ({ status }: { status: string }) => {
+  switch (status) {
+    case 'attentive':
+      return <Eye size={16} className="text-green-600" />;
+    case 'confused':
+      return <AlertTriangle size={16} className="text-red-600" />;
+    case 'inattentive':
+      return <Activity size={16} className="text-yellow-600" />;
+    default:
+      return null;
+  }
+};
+
 const StudentPage = () => {
   const { studentId } = useParams<{ studentId: string }>();
   const student = studentId ? studentsData[studentId] : null;
@@ -84,106 +144,229 @@ const StudentPage = () => {
     inattentive: "Inattentive"
   };
 
-  const StatusIcon = () => {
-    switch (student.status) {
-      case 'attentive':
-        return <Eye size={16} className="text-green-600" />;
-      case 'confused':
-        return <AlertTriangle size={16} className="text-red-600" />;
-      case 'inattentive':
-        return <Activity size={16} className="text-yellow-600" />;
-      default:
-        return null;
-    }
-  };
-
-  const getStatusDescription = () => {
-    switch (student.status) {
-      case 'attentive':
-        return `${student.name} is demonstrating strong focus during class sessions. Their engagement metrics show consistent attention.`;
-      case 'confused':
-        return `${student.name} appears to be struggling with the current material. Consider scheduling a 1:1 session to address concerns.`;
-      case 'inattentive':
-        return `${student.name} has shown decreased focus in recent sessions. Monitor engagement levels and consider alternative teaching approaches.`;
-      default:
-        return '';
-    }
-  };
-
   const handleSaveNotes = () => {
     // In a real app, this would update to the backend
+    studentsData[studentId!].notes = notes;
     toast({
-      title: "Notes saved",
+      title: `Notes saved for ${student.name}`,
       description: "Student notes have been updated",
     });
   };
 
+  const handleDownloadReport = () => {
+    toast({
+      title: `Report Downloaded`,
+      description: `${student.name}'s progress report has been downloaded`,
+    });
+  };
+
+  const chartConfig = {
+    attention: { theme: { light: "#9FE2BF", dark: "#3CB371" } },
+    understanding: { theme: { light: "#ADD8E6", dark: "#1E90FF" } }
+  };
+
+  // Get student-specific chart data
+  const chartData = analyticsDataByStudent[studentId as keyof typeof analyticsDataByStudent] || [];
+  const studentSuggestions = aiSuggestionsByStudent[studentId as keyof typeof aiSuggestionsByStudent] || [];
+
+  // Calculate understanding percentage based on the most recent data point
+  const latestDataPoint = chartData[chartData.length - 1];
+  const understandingPercentage = latestDataPoint ? latestDataPoint.understanding : student.understanding;
+  
+  // Calculate time proportions based on student status
+  const getTimeProps = () => {
+    switch(student.status) {
+      case 'attentive':
+        return { attentive: '7m 00s', confused: '3m 00s', inattentive: '5m 00s', attentivePerc: '47%', confusedPerc: '20%', inattentivePerc: '33%' };
+      case 'confused':
+        return { attentive: '3m 00s', confused: '9m 00s', inattentive: '3m 00s', attentivePerc: '20%', confusedPerc: '60%', inattentivePerc: '20%' };
+      case 'inattentive':
+        return { attentive: '2m 00s', confused: '3m 00s', inattentive: '10m 00s', attentivePerc: '13%', confusedPerc: '20%', inattentivePerc: '67%' };
+      default:
+        return { attentive: '5m 00s', confused: '5m 00s', inattentive: '5m 00s', attentivePerc: '33%', confusedPerc: '33%', inattentivePerc: '33%' };
+    }
+  };
+  
+  const timeProps = getTimeProps();
+
   return (
     <div className="flex h-screen bg-white">
       <AttuneSidebar />
-      <div className="flex-1 p-8 overflow-y-auto">
-        <div className="max-w-4xl mx-auto">
-          <div className="flex items-center mb-10">
-            <div className="h-20 w-20 rounded-full bg-white overflow-hidden flex items-center justify-center shadow-[5px_5px_15px_rgba(0,0,0,0.1),_-5px_-5px_15px_rgba(255,255,255,0.8)]">
-              <img src={student.avatarUrl} alt={student.name} className="h-full w-full object-cover" />
-            </div>
-            <div className="ml-6">
-              <h1 className="text-3xl font-bold text-[hsl(var(--attune-purple))]">{student.name}</h1>
-              <div className="flex items-center mt-2">
-                <span className={`h-3 w-3 rounded-full mr-2 ${statusColors[student.status]}`}></span>
-                <span className="text-gray-700 flex items-center gap-2">
-                  {statusText[student.status]}
-                  <StatusIcon />
-                </span>
+      <div className="flex-1 p-6 overflow-y-auto">
+        <div className="max-w-7xl mx-auto">
+          <div className="flex justify-between items-center mb-6">
+            <div className="flex items-center">
+              <div className="h-16 w-16 rounded-full bg-white overflow-hidden flex items-center justify-center shadow-[5px_5px_15px_rgba(0,0,0,0.1),_-5px_-5px_15px_rgba(255,255,255,0.8)] mr-4">
+                <img src={student.avatarUrl} alt={student.name} className="h-full w-full object-cover" />
+              </div>
+              <div>
+                <h1 className="text-3xl font-bold text-[hsl(var(--attune-purple))]">{student.name}</h1>
+                <div className="flex items-center mt-1">
+                  <span className={`h-3 w-3 rounded-full mr-2 ${statusColors[student.status]}`}></span>
+                  <span className="text-gray-700 flex items-center gap-2">
+                    {statusText[student.status]}
+                    <StatusIcon status={student.status} />
+                  </span>
+                </div>
               </div>
             </div>
+            <Button 
+              onClick={handleDownloadReport} 
+              className="bg-[hsl(var(--attune-purple))] hover:bg-[hsl(var(--attune-dark-purple))]"
+            >
+              <Download className="mr-2 h-4 w-4" />
+              Download Report
+            </Button>
           </div>
           
-          <div className="rounded-2xl p-6 bg-gray-50 shadow-[5px_5px_15px_rgba(0,0,0,0.05),_-5px_-5px_15px_rgba(255,255,255,0.8)] mb-6">
-            <h2 className="text-xl font-semibold text-[hsl(var(--attune-purple))] mb-2">Status Assessment</h2>
-            <p className="text-gray-700">{getStatusDescription()}</p>
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+            <div className="lg:col-span-2 rounded-3xl p-6 bg-gray-50 shadow-[5px_5px_15px_rgba(0,0,0,0.05),_-5px_-5px_15px_rgba(255,255,255,0.8)]">
+              <div className="flex items-center mb-4">
+                <BookOpen className="mr-2 text-[hsl(var(--attune-purple))]" />
+                <h2 className="text-xl font-semibold text-[hsl(var(--attune-purple))]">{student.name}'s Progress</h2>
+              </div>
+              <div className="h-[300px] w-full">
+                <ChartContainer
+                  config={chartConfig}
+                  className="h-full w-full [&_.recharts-cartesian-grid-horizontal_line]:stroke-muted [&_.recharts-cartesian-grid-vertical_line]:stroke-muted"
+                >
+                  <ResponsiveContainer width="100%" height="100%">
+                    <AreaChart
+                      data={chartData}
+                      margin={{ top: 10, right: 30, left: 0, bottom: 0 }}
+                    >
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="timestamp" />
+                      <YAxis tickFormatter={(value) => `${value}%`} />
+                      <ChartTooltip content={<ChartTooltipContent />} />
+                      <Legend />
+                      <Area
+                        type="monotone"
+                        dataKey="attention"
+                        name="Attention"
+                        stroke="#3CB371"
+                        fill="#9FE2BF"
+                        fillOpacity={0.3}
+                      />
+                      <Area
+                        type="monotone"
+                        dataKey="understanding"
+                        name="Understanding"
+                        stroke="#1E90FF"
+                        fill="#ADD8E6"
+                        fillOpacity={0.3}
+                      />
+                    </AreaChart>
+                  </ResponsiveContainer>
+                </ChartContainer>
+              </div>
+            </div>
+            
+            <div>
+              <Card className="rounded-2xl overflow-hidden shadow-[5px_5px_15px_rgba(0,0,0,0.05),_-5px_-5px_15px_rgba(255,255,255,0.8)] border border-purple-100">
+                <CardHeader className="bg-[hsl(var(--attune-light-purple))] text-white pb-3">
+                  <CardTitle className="text-xl">Summary</CardTitle>
+                  <CardDescription className="text-white text-opacity-80">Weekly Performance</CardDescription>
+                </CardHeader>
+                <CardContent className="pt-4">
+                  <div className="flex justify-between items-center mb-2">
+                    <span className="text-lg text-gray-600">Understanding</span>
+                    <span className="text-2xl font-bold text-[hsl(var(--attune-purple))]">{understandingPercentage}%</span>
+                  </div>
+                  <div className="relative h-4 bg-gray-200 rounded-full overflow-hidden mb-4">
+                    <div 
+                      className="absolute top-0 left-0 h-full bg-green-500" 
+                      style={{ width: `${understandingPercentage}%` }}
+                    ></div>
+                  </div>
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Status</TableHead>
+                        <TableHead className="text-right">Time</TableHead>
+                        <TableHead className="text-right">Percentage</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      <TableRow>
+                        <TableCell className="flex items-center gap-1">
+                          <Eye size={14} className="text-green-600" /> Attentive
+                        </TableCell>
+                        <TableCell className="text-right">{timeProps.attentive}</TableCell>
+                        <TableCell className="text-right">{timeProps.attentivePerc}</TableCell>
+                      </TableRow>
+                      <TableRow>
+                        <TableCell className="flex items-center gap-1">
+                          <AlertTriangle size={14} className="text-red-600" /> Confused
+                        </TableCell>
+                        <TableCell className="text-right">{timeProps.confused}</TableCell>
+                        <TableCell className="text-right">{timeProps.confusedPerc}</TableCell>
+                      </TableRow>
+                      <TableRow>
+                        <TableCell className="flex items-center gap-1">
+                          <Activity size={14} className="text-yellow-600" /> Inattentive
+                        </TableCell>
+                        <TableCell className="text-right">{timeProps.inattentive}</TableCell>
+                        <TableCell className="text-right">{timeProps.inattentivePerc}</TableCell>
+                      </TableRow>
+                    </TableBody>
+                  </Table>
+                </CardContent>
+              </Card>
+            </div>
           </div>
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-            <div className="rounded-2xl p-6 bg-gray-50 shadow-[5px_5px_15px_rgba(0,0,0,0.05),_-5px_-5px_15px_rgba(255,255,255,0.8)]">
-              <h2 className="text-xl font-semibold text-[hsl(var(--attune-purple))] mb-4">Understanding</h2>
-              <div className="relative h-4 bg-gray-200 rounded-full overflow-hidden">
-                <div 
-                  className="absolute top-0 left-0 h-full bg-green-500" 
-                  style={{ width: `${student.understanding}%` }}
-                ></div>
+            <div className="rounded-3xl p-6 bg-gray-50 shadow-[5px_5px_15px_rgba(0,0,0,0.05),_-5px_-5px_15px_rgba(255,255,255,0.8)]">
+              <div className="flex items-center mb-4">
+                <Lightbulb className="mr-2 text-[hsl(var(--attune-purple))]" />
+                <h2 className="text-xl font-semibold text-[hsl(var(--attune-purple))]">Teaching Suggestions</h2>
               </div>
-              <div className="mt-2 text-right font-medium">{student.understanding}%</div>
+              <div className="space-y-3">
+                {studentSuggestions.map((suggestion, index) => (
+                  <div 
+                    key={index} 
+                    className="rounded-xl py-2 px-4 bg-white border border-purple-100 shadow-[2px_2px_5px_rgba(0,0,0,0.05),_-2px_-2px_5px_rgba(255,255,255,0.8)]"
+                  >
+                    <p className="text-sm text-gray-700">{suggestion}</p>
+                  </div>
+                ))}
+              </div>
             </div>
             
-            <div className="rounded-2xl p-6 bg-gray-50 shadow-[5px_5px_15px_rgba(0,0,0,0.05),_-5px_-5px_15px_rgba(255,255,255,0.8)]">
-              <h2 className="text-xl font-semibold text-[hsl(var(--attune-purple))] mb-4">Confusion</h2>
-              <div className="relative h-4 bg-gray-200 rounded-full overflow-hidden">
-                <div 
-                  className="absolute top-0 left-0 h-full bg-red-500" 
-                  style={{ width: `${student.confusion}%` }}
-                ></div>
+            <div className="rounded-3xl p-6 bg-gray-50 shadow-[5px_5px_15px_rgba(0,0,0,0.05),_-5px_-5px_15px_rgba(255,255,255,0.8)]">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-xl font-semibold text-[hsl(var(--attune-purple))]">Notes</h2>
+                <Button onClick={handleSaveNotes}>Save Notes</Button>
               </div>
-              <div className="mt-2 text-right font-medium">{student.confusion}%</div>
+              <Textarea 
+                value={notes} 
+                onChange={(e) => setNotes(e.target.value)}
+                className="min-h-[150px] w-full p-3 border rounded-md"
+                placeholder={`Add detailed notes about ${student.name}...`}
+              />
             </div>
           </div>
-          
-          <div className="rounded-2xl p-6 bg-gray-50 shadow-[5px_5px_15px_rgba(0,0,0,0.05),_-5px_-5px_15px_rgba(255,255,255,0.8)] mb-6">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-semibold text-[hsl(var(--attune-purple))]">Notes</h2>
-              <Button onClick={handleSaveNotes}>Save Notes</Button>
+
+          <div className="rounded-3xl p-6 bg-gray-50 shadow-[5px_5px_15px_rgba(0,0,0,0.05),_-5px_-5px_15px_rgba(255,255,255,0.8)]">
+            <div className="flex items-center mb-4">
+              <BookOpen className="mr-2 text-[hsl(var(--attune-purple))]" />
+              <h2 className="text-xl font-semibold text-[hsl(var(--attune-purple))]">Performance Insights</h2>
             </div>
-            <Textarea 
-              value={notes} 
-              onChange={(e) => setNotes(e.target.value)}
-              className="min-h-[150px] w-full p-3 border rounded-md"
-              placeholder="Add detailed notes about this student..."
-            />
-          </div>
-          
-          <div className="rounded-2xl p-6 bg-gray-50 shadow-[5px_5px_15px_rgba(0,0,0,0.05),_-5px_-5px_15px_rgba(255,255,255,0.8)]">
-            <h2 className="text-xl font-semibold text-[hsl(var(--attune-purple))] mb-4">Recent Activity</h2>
-            <p className="text-gray-500 italic">No recent activity to display</p>
+            <p className="mb-4">
+              {student.status === 'attentive' && 
+                `${student.name} has been performing well in class, demonstrating strong engagement with an understanding level of ${understandingPercentage}%. 
+                Continue with the current teaching approach while offering additional challenges to maintain interest.`
+              }
+              {student.status === 'confused' && 
+                `${student.name} appears to be struggling with recent material, showing only ${understandingPercentage}% understanding. 
+                Consider scheduling a one-on-one session to identify specific areas of difficulty and provide additional support.`
+              }
+              {student.status === 'inattentive' && 
+                `${student.name}'s attention level has been concerning recently, with focus metrics at only ${student.engagement}%. 
+                Understanding is at ${understandingPercentage}%. Try incorporating more interactive elements that might better engage this learning style.`
+              }
+            </p>
           </div>
         </div>
       </div>
