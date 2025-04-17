@@ -1,7 +1,11 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { AttuneSidebar } from '@/components/sidebar/AttuneSidebar';
+import { Button } from '@/components/ui/button';
+import { Textarea } from '@/components/ui/textarea';
+import { useToast } from '@/hooks/use-toast';
+import { Eye, AlertTriangle, Activity } from 'lucide-react';
 
 interface StudentData {
   id: number;
@@ -51,6 +55,8 @@ const studentsData: Record<string, StudentData> = {
 const StudentPage = () => {
   const { studentId } = useParams<{ studentId: string }>();
   const student = studentId ? studentsData[studentId] : null;
+  const [notes, setNotes] = useState(student?.notes || '');
+  const { toast } = useToast();
 
   if (!student) {
     return (
@@ -78,6 +84,40 @@ const StudentPage = () => {
     inattentive: "Inattentive"
   };
 
+  const StatusIcon = () => {
+    switch (student.status) {
+      case 'attentive':
+        return <Eye size={16} className="text-green-600" />;
+      case 'confused':
+        return <AlertTriangle size={16} className="text-red-600" />;
+      case 'inattentive':
+        return <Activity size={16} className="text-yellow-600" />;
+      default:
+        return null;
+    }
+  };
+
+  const getStatusDescription = () => {
+    switch (student.status) {
+      case 'attentive':
+        return `${student.name} is demonstrating strong focus during class sessions. Their engagement metrics show consistent attention.`;
+      case 'confused':
+        return `${student.name} appears to be struggling with the current material. Consider scheduling a 1:1 session to address concerns.`;
+      case 'inattentive':
+        return `${student.name} has shown decreased focus in recent sessions. Monitor engagement levels and consider alternative teaching approaches.`;
+      default:
+        return '';
+    }
+  };
+
+  const handleSaveNotes = () => {
+    // In a real app, this would update to the backend
+    toast({
+      title: "Notes saved",
+      description: "Student notes have been updated",
+    });
+  };
+
   return (
     <div className="flex h-screen bg-white">
       <AttuneSidebar />
@@ -91,9 +131,17 @@ const StudentPage = () => {
               <h1 className="text-3xl font-bold text-[hsl(var(--attune-purple))]">{student.name}</h1>
               <div className="flex items-center mt-2">
                 <span className={`h-3 w-3 rounded-full mr-2 ${statusColors[student.status]}`}></span>
-                <span className="text-gray-700">{statusText[student.status]}</span>
+                <span className="text-gray-700 flex items-center gap-2">
+                  {statusText[student.status]}
+                  <StatusIcon />
+                </span>
               </div>
             </div>
+          </div>
+          
+          <div className="rounded-2xl p-6 bg-gray-50 shadow-[5px_5px_15px_rgba(0,0,0,0.05),_-5px_-5px_15px_rgba(255,255,255,0.8)] mb-6">
+            <h2 className="text-xl font-semibold text-[hsl(var(--attune-purple))] mb-2">Status Assessment</h2>
+            <p className="text-gray-700">{getStatusDescription()}</p>
           </div>
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
@@ -118,11 +166,19 @@ const StudentPage = () => {
               </div>
               <div className="mt-2 text-right font-medium">{student.confusion}%</div>
             </div>
-            
-            <div className="rounded-2xl p-6 bg-gray-50 shadow-[5px_5px_15px_rgba(0,0,0,0.05),_-5px_-5px_15px_rgba(255,255,255,0.8)] md:col-span-2">
-              <h2 className="text-xl font-semibold text-[hsl(var(--attune-purple))] mb-4">Notes</h2>
-              <p className="text-gray-700">{student.notes}</p>
+          </div>
+          
+          <div className="rounded-2xl p-6 bg-gray-50 shadow-[5px_5px_15px_rgba(0,0,0,0.05),_-5px_-5px_15px_rgba(255,255,255,0.8)] mb-6">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-semibold text-[hsl(var(--attune-purple))]">Notes</h2>
+              <Button onClick={handleSaveNotes}>Save Notes</Button>
             </div>
+            <Textarea 
+              value={notes} 
+              onChange={(e) => setNotes(e.target.value)}
+              className="min-h-[150px] w-full p-3 border rounded-md"
+              placeholder="Add detailed notes about this student..."
+            />
           </div>
           
           <div className="rounded-2xl p-6 bg-gray-50 shadow-[5px_5px_15px_rgba(0,0,0,0.05),_-5px_-5px_15px_rgba(255,255,255,0.8)]">
