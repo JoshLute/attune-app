@@ -1,22 +1,38 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { AttuneSidebar } from '@/components/sidebar/AttuneSidebar';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Separator } from '@/components/ui/separator';
+import { Button } from '@/components/ui/button';
 import { BookOpen, Activity, AlertTriangle, Eye, Lightbulb } from 'lucide-react';
 
 // Mock data for the analytics chart
-const analyticsData = [
-  { timestamp: '00:00', inattention: 10, confusion: 5, transcript: "Today we're going to learn about photosynthesis." },
-  { timestamp: '02:30', inattention: 15, confusion: 20, transcript: "The process requires sunlight, water, and carbon dioxide." },
-  { timestamp: '05:00', inattention: 40, confusion: 60, transcript: "The light reactions happen in the thylakoid membrane." },
-  { timestamp: '07:30', inattention: 30, confusion: 70, transcript: "ATP and NADPH are produced in this stage." },
-  { timestamp: '10:00', inattention: 20, confusion: 40, transcript: "Next, the Calvin cycle uses these products." },
-  { timestamp: '12:30', inattention: 10, confusion: 15, transcript: "Carbon fixation happens during this cycle." },
-  { timestamp: '15:00', inattention: 5, confusion: 10, transcript: "Let's review what we've learned about photosynthesis." },
+const analyticsDataToday = [
+  { timestamp: '00:00', attention: 90, understanding: 95, transcript: "Today we're going to learn about photosynthesis." },
+  { timestamp: '02:30', attention: 85, understanding: 80, transcript: "The process requires sunlight, water, and carbon dioxide." },
+  { timestamp: '05:00', attention: 60, understanding: 40, transcript: "The light reactions happen in the thylakoid membrane." },
+  { timestamp: '07:30', attention: 70, understanding: 30, transcript: "ATP and NADPH are produced in this stage." },
+  { timestamp: '10:00', attention: 80, understanding: 60, transcript: "Next, the Calvin cycle uses these products." },
+  { timestamp: '12:30', attention: 90, understanding: 85, transcript: "Carbon fixation happens during this cycle." },
+  { timestamp: '15:00', attention: 95, understanding: 90, transcript: "Let's review what we've learned about photosynthesis." },
+];
+
+const analyticsDataWeek = [
+  { timestamp: 'Mon', attention: 85, understanding: 80, transcript: "Monday's photosynthesis lesson" },
+  { timestamp: 'Tue', attention: 75, understanding: 70, transcript: "Tuesday's cellular respiration lesson" },
+  { timestamp: 'Wed', attention: 90, understanding: 85, transcript: "Wednesday's genetics lesson" },
+  { timestamp: 'Thu', attention: 65, understanding: 55, transcript: "Thursday's evolution lesson" },
+  { timestamp: 'Fri', attention: 80, understanding: 75, transcript: "Friday's ecology lesson" },
+];
+
+const analyticsDataMonth = [
+  { timestamp: 'Week 1', attention: 80, understanding: 75, transcript: "First week of the month" },
+  { timestamp: 'Week 2', attention: 85, understanding: 80, transcript: "Second week of the month" },
+  { timestamp: 'Week 3', attention: 75, understanding: 70, transcript: "Third week of the month" },
+  { timestamp: 'Week 4', attention: 90, understanding: 85, transcript: "Fourth week of the month" },
 ];
 
 // Mock data for the lesson outline
@@ -178,9 +194,24 @@ const AISuggestionsSection = () => {
 };
 
 const AnalyticsPage = () => {
+  const [timeRange, setTimeRange] = useState<'today' | 'week' | 'month'>('today');
+  
+  const getDataByTimeRange = () => {
+    switch (timeRange) {
+      case 'today':
+        return analyticsDataToday;
+      case 'week':
+        return analyticsDataWeek;
+      case 'month':
+        return analyticsDataMonth;
+      default:
+        return analyticsDataToday;
+    }
+  };
+  
   const chartConfig = {
-    inattention: { theme: { light: "#F9D876", dark: "#E5AC00" } },
-    confusion: { theme: { light: "#F97676", dark: "#E50000" } }
+    attention: { theme: { light: "#9FE2BF", dark: "#3CB371" } },
+    understanding: { theme: { light: "#ADD8E6", dark: "#1E90FF" } }
   };
   
   return (
@@ -189,7 +220,7 @@ const AnalyticsPage = () => {
       <div className="flex-1 p-6 overflow-y-auto">
         <div className="max-w-7xl mx-auto">
           <h1 className="text-3xl font-bold text-gray-800 mb-2">Analytics</h1>
-          <p className="text-gray-500 mb-6">Get insights from today's class sessions</p>
+          <p className="text-gray-500 mb-6">Get insights from class sessions</p>
           
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
             <div className="lg:col-span-2 rounded-3xl p-6 bg-gray-50 shadow-[5px_5px_15px_rgba(0,0,0,0.05),_-5px_-5px_15px_rgba(255,255,255,0.8)]">
@@ -198,10 +229,33 @@ const AnalyticsPage = () => {
                   <BookOpen className="mr-2 text-[hsl(var(--attune-purple))]" />
                   <h2 className="text-xl font-semibold text-[hsl(var(--attune-purple))]">Lesson Title</h2>
                 </div>
-                <div className="flex items-center text-sm text-gray-500">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" className="mr-1">
-                    <path d="M6 9L12 15L18 9" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                  </svg>
+                <div className="flex items-center gap-2">
+                  <div className="flex rounded-lg overflow-hidden shadow-[2px_2px_5px_rgba(0,0,0,0.08)]">
+                    <Button
+                      variant={timeRange === 'today' ? 'default' : 'outline'}
+                      className={`rounded-r-none border-r-0 ${timeRange === 'today' ? 'bg-[hsl(var(--attune-purple))]' : ''}`}
+                      size="sm"
+                      onClick={() => setTimeRange('today')}
+                    >
+                      Today
+                    </Button>
+                    <Button
+                      variant={timeRange === 'week' ? 'default' : 'outline'}
+                      className={`rounded-none border-x-0 ${timeRange === 'week' ? 'bg-[hsl(var(--attune-purple))]' : ''}`}
+                      size="sm"
+                      onClick={() => setTimeRange('week')}
+                    >
+                      This Week
+                    </Button>
+                    <Button
+                      variant={timeRange === 'month' ? 'default' : 'outline'}
+                      className={`rounded-l-none border-l-0 ${timeRange === 'month' ? 'bg-[hsl(var(--attune-purple))]' : ''}`}
+                      size="sm"
+                      onClick={() => setTimeRange('month')}
+                    >
+                      This Month
+                    </Button>
+                  </div>
                 </div>
               </div>
               <div className="h-[300px] w-full">
@@ -211,7 +265,7 @@ const AnalyticsPage = () => {
                 >
                   <ResponsiveContainer width="100%" height="100%">
                     <AreaChart
-                      data={analyticsData}
+                      data={getDataByTimeRange()}
                       margin={{ top: 10, right: 30, left: 0, bottom: 0 }}
                     >
                       <CartesianGrid strokeDasharray="3 3" />
@@ -221,18 +275,18 @@ const AnalyticsPage = () => {
                       <Legend />
                       <Area
                         type="monotone"
-                        dataKey="inattention"
-                        name="Inattention"
-                        stroke="#E5AC00"
-                        fill="#F9D876"
+                        dataKey="attention"
+                        name="Attention"
+                        stroke="#3CB371"
+                        fill="#9FE2BF"
                         fillOpacity={0.3}
                       />
                       <Area
                         type="monotone"
-                        dataKey="confusion"
-                        name="Confusion"
-                        stroke="#E50000"
-                        fill="#F97676"
+                        dataKey="understanding"
+                        name="Understanding"
+                        stroke="#1E90FF"
+                        fill="#ADD8E6"
                         fillOpacity={0.3}
                       />
                     </AreaChart>
@@ -242,7 +296,7 @@ const AnalyticsPage = () => {
               <div className="mt-6">
                 <h3 className="text-lg font-medium text-[hsl(var(--attune-purple))] mb-2">Session Transcript</h3>
                 <div className="max-h-40 overflow-y-auto rounded-xl border border-gray-200 p-3 shadow-inner bg-white">
-                  {analyticsData.map((item, index) => (
+                  {getDataByTimeRange().map((item, index) => (
                     <div key={index} className="mb-2">
                       <span className="text-xs font-semibold text-[hsl(var(--attune-purple))]">[{item.timestamp}]</span>
                       <span className="ml-2 text-sm">{item.transcript}</span>
