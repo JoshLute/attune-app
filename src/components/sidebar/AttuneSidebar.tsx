@@ -5,7 +5,7 @@ import { StudentCard } from './StudentCard';
 import { NavItem } from './NavItem';
 import { SidebarSection } from './SidebarSection';
 import { ProfileSection } from './ProfileSection';
-import { Home, FileText, Users, Settings } from 'lucide-react';
+import { Home, FileText, BarChart, Settings } from 'lucide-react';
 import { useLocation } from 'react-router-dom';
 
 export function AttuneSidebar() {
@@ -71,7 +71,7 @@ export function AttuneSidebar() {
             isActive={location.pathname === '/collaboration'}
           />
           <NavItem 
-            icon={<Users size={18} />} 
+            icon={<BarChart size={18} />} 
             label="Analytics"
             href="/analytics"
             isActive={location.pathname === '/analytics'}
@@ -83,7 +83,7 @@ export function AttuneSidebar() {
                   <path
                     d="M3.41666 18.4375V12.4583M3.41666 9.04167V3.0625M10.25 18.4375V10.75M10.25 7.33333V3.0625M17.0833 18.4375V14.1667M17.0833 10.75V3.0625M0.854156 12.4583H5.97916M7.68749 7.33333H12.8125M14.5208 14.1667H19.6458"
                     stroke="currentColor"
-                    strokeWidth="2"
+                    strokeWidth="2.5"
                     strokeLinecap="round"
                     strokeLinejoin="round"
                   ></path>

@@ -6,7 +6,7 @@ import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Separator } from '@/components/ui/separator';
-import { BookOpen, Activity, AlertTriangle, Eye } from 'lucide-react';
+import { BookOpen, Activity, AlertTriangle, Eye, Lightbulb } from 'lucide-react';
 
 // Mock data for the analytics chart
 const analyticsData = [
@@ -45,6 +45,12 @@ const lessonOutline = [
     status: 'attentive',
     transcript: "Let's review what we've learned about photosynthesis."
   },
+];
+
+// AI Suggestions for teaching
+const aiSuggestions = [
+  "Take a break before starting practice problems",
+  "Jonathan doesn't like to be called on unless he intentionally raises his hand. His attention decreased significantly"
 ];
 
 // Helper to determine the status background colors in neumorphic style
@@ -99,8 +105,8 @@ const UnderstandingSummary = () => {
   return (
     <Card className="rounded-2xl overflow-hidden shadow-[5px_5px_15px_rgba(0,0,0,0.05),_-5px_-5px_15px_rgba(255,255,255,0.8)] border border-purple-100">
       <CardHeader className="bg-[hsl(var(--attune-light-purple))] text-white pb-3">
-        <CardTitle className="text-xl">Lesson Understanding</CardTitle>
-        <CardDescription className="text-white text-opacity-80">Session summary</CardDescription>
+        <CardTitle className="text-xl">Summary</CardTitle>
+        <CardDescription className="text-white text-opacity-80">4 Minutes 22 Seconds</CardDescription>
       </CardHeader>
       <CardContent className="pt-4">
         <div className="flex justify-between items-center mb-2">
@@ -150,6 +156,27 @@ const UnderstandingSummary = () => {
   );
 };
 
+const AISuggestionsSection = () => {
+  return (
+    <div className="rounded-3xl p-6 bg-gray-50 shadow-[5px_5px_15px_rgba(0,0,0,0.05),_-5px_-5px_15px_rgba(255,255,255,0.8)]">
+      <div className="flex items-center mb-4">
+        <Lightbulb className="mr-2 text-[hsl(var(--attune-purple))]" />
+        <h2 className="text-xl font-semibold text-[hsl(var(--attune-purple))]">AI Suggestions</h2>
+      </div>
+      <div className="space-y-3">
+        {aiSuggestions.map((suggestion, index) => (
+          <div 
+            key={index} 
+            className="rounded-xl py-2 px-4 bg-white border border-purple-100 shadow-[2px_2px_5px_rgba(0,0,0,0.05),_-2px_-2px_5px_rgba(255,255,255,0.8)]"
+          >
+            <p className="text-sm text-gray-700">{suggestion}</p>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
+
 const AnalyticsPage = () => {
   const chartConfig = {
     inattention: { theme: { light: "#F9D876", dark: "#E5AC00" } },
@@ -161,13 +188,21 @@ const AnalyticsPage = () => {
       <AttuneSidebar />
       <div className="flex-1 p-6 overflow-y-auto">
         <div className="max-w-7xl mx-auto">
-          <h1 className="text-3xl font-bold text-[hsl(var(--attune-purple))] mb-6">Analytics</h1>
+          <h1 className="text-3xl font-bold text-gray-800 mb-2">Analytics</h1>
+          <p className="text-gray-500 mb-6">Get insights from today's class sessions</p>
           
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
             <div className="lg:col-span-2 rounded-3xl p-6 bg-gray-50 shadow-[5px_5px_15px_rgba(0,0,0,0.05),_-5px_-5px_15px_rgba(255,255,255,0.8)]">
-              <div className="flex items-center mb-4">
-                <BookOpen className="mr-2 text-[hsl(var(--attune-purple))]" />
-                <h2 className="text-xl font-semibold text-[hsl(var(--attune-purple))]">Inattention & Confusion Metrics</h2>
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center">
+                  <BookOpen className="mr-2 text-[hsl(var(--attune-purple))]" />
+                  <h2 className="text-xl font-semibold text-[hsl(var(--attune-purple))]">Lesson Title</h2>
+                </div>
+                <div className="flex items-center text-sm text-gray-500">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" className="mr-1">
+                    <path d="M6 9L12 15L18 9" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                </div>
               </div>
               <div className="h-[300px] w-full">
                 <ChartContainer
@@ -233,6 +268,8 @@ const AnalyticsPage = () => {
               </div>
             </div>
           </div>
+          
+          <AISuggestionsSection />
         </div>
       </div>
     </div>

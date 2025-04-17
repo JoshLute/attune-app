@@ -8,6 +8,7 @@ import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import StudentPage from "./pages/StudentPage";
 import { AttuneSidebar } from "./components/sidebar/AttuneSidebar";
+import AnalyticsPage from "./pages/AnalyticsPage";
 
 // Placeholder pages for navigation
 const CollaborationPage = () => (
@@ -16,20 +17,6 @@ const CollaborationPage = () => (
     <div className="flex-1 p-8">
       <div className="max-w-4xl mx-auto">
         <h1 className="text-3xl font-bold text-[hsl(var(--attune-purple))] mb-6">Collaboration</h1>
-        <div className="rounded-3xl p-8 bg-gray-50 shadow-[5px_5px_15px_rgba(0,0,0,0.05),_-5px_-5px_15px_rgba(255,255,255,0.8)]">
-          <p className="text-gray-600">This page is under construction.</p>
-        </div>
-      </div>
-    </div>
-  </div>
-);
-
-const AnalyticsPage = () => (
-  <div className="flex h-screen bg-white">
-    <AttuneSidebar />
-    <div className="flex-1 p-8">
-      <div className="max-w-4xl mx-auto">
-        <h1 className="text-3xl font-bold text-[hsl(var(--attune-purple))] mb-6">Analytics</h1>
         <div className="rounded-3xl p-8 bg-gray-50 shadow-[5px_5px_15px_rgba(0,0,0,0.05),_-5px_-5px_15px_rgba(255,255,255,0.8)]">
           <p className="text-gray-600">This page is under construction.</p>
         </div>
