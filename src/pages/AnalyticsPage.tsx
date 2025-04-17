@@ -7,7 +7,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Separator } from '@/components/ui/separator';
 import { Button } from '@/components/ui/button';
-import { BookOpen, Activity, AlertTriangle, Eye, Lightbulb } from 'lucide-react';
+import { BookOpen, Activity, AlertTriangle, Eye, Lightbulb, Download, FileText } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
 
 // Mock data for the analytics chart
 const analyticsDataToday = [
@@ -195,6 +196,7 @@ const AISuggestionsSection = () => {
 
 const AnalyticsPage = () => {
   const [timeRange, setTimeRange] = useState<'today' | 'week' | 'month'>('today');
+  const { toast } = useToast();
   
   const getDataByTimeRange = () => {
     switch (timeRange) {
@@ -213,14 +215,34 @@ const AnalyticsPage = () => {
     attention: { theme: { light: "#9FE2BF", dark: "#3CB371" } },
     understanding: { theme: { light: "#ADD8E6", dark: "#1E90FF" } }
   };
+
+  const handleDownloadReport = () => {
+    // In a real app, this would generate a PDF with the report data
+    toast({
+      title: "Report Downloaded",
+      description: "Your lesson summary report has been downloaded",
+    });
+    console.log("Downloading report...");
+  };
   
   return (
     <div className="flex h-screen bg-white">
       <AttuneSidebar />
       <div className="flex-1 p-6 overflow-y-auto">
         <div className="max-w-7xl mx-auto">
-          <h1 className="text-3xl font-bold text-gray-800 mb-2">Analytics</h1>
-          <p className="text-gray-500 mb-6">Get insights from class sessions</p>
+          <div className="flex justify-between items-center mb-6">
+            <div>
+              <h1 className="text-3xl font-bold text-gray-800 mb-2">Analytics</h1>
+              <p className="text-gray-500">Get insights from class sessions</p>
+            </div>
+            <Button 
+              onClick={handleDownloadReport} 
+              className="bg-[hsl(var(--attune-purple))] hover:bg-[hsl(var(--attune-dark-purple))]"
+            >
+              <Download className="mr-2 h-4 w-4" />
+              Download Report
+            </Button>
+          </div>
           
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
             <div className="lg:col-span-2 rounded-3xl p-6 bg-gray-50 shadow-[5px_5px_15px_rgba(0,0,0,0.05),_-5px_-5px_15px_rgba(255,255,255,0.8)]">
@@ -298,8 +320,7 @@ const AnalyticsPage = () => {
                 <div className="max-h-40 overflow-y-auto rounded-xl border border-gray-200 p-3 shadow-inner bg-white">
                   {getDataByTimeRange().map((item, index) => (
                     <div key={index} className="mb-2">
-                      <span className="text-xs font-semibold text-[hsl(var(--attune-purple))]">[{item.timestamp}]</span>
-                      <span className="ml-2 text-sm">{item.transcript}</span>
+                      <span className="text-sm">{item.transcript}</span>
                     </div>
                   ))}
                 </div>
@@ -307,19 +328,19 @@ const AnalyticsPage = () => {
             </div>
             
             <div className="space-y-6">
-              <UnderstandingSummary />
-              
               <div className="rounded-3xl p-6 bg-gray-50 shadow-[5px_5px_15px_rgba(0,0,0,0.05),_-5px_-5px_15px_rgba(255,255,255,0.8)]">
                 <div className="flex items-center mb-4">
                   <BookOpen className="mr-2 text-[hsl(var(--attune-purple))]" />
                   <h2 className="text-xl font-semibold text-[hsl(var(--attune-purple))]">Lesson Outline</h2>
                 </div>
-                <div className="overflow-y-auto max-h-[400px] pr-1">
+                <div className="overflow-y-auto max-h-[250px] pr-1">
                   {lessonOutline.map((item, index) => (
                     <LessonOutlineCard key={index} item={item} />
                   ))}
                 </div>
               </div>
+              
+              <UnderstandingSummary />
             </div>
           </div>
           
