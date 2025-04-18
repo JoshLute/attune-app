@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { AttuneSidebar } from "@/components/sidebar/AttuneSidebar";
 import { Button } from "@/components/ui/button";
@@ -231,6 +232,7 @@ const RecordingPage = () => {
                       />
                     </div>
                   </div>
+                </div>
                 
                 {/* Transcript */}
                 <div className="bg-[#F1F0FB] p-6 rounded-3xl">
