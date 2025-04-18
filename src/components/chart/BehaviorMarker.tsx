@@ -1,17 +1,16 @@
 
 import React from 'react';
 import { AlertTriangle, MessageSquare, Users } from 'lucide-react';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { BehaviorTag } from '@/types/BehaviorEvent';
+import { Tooltip } from '@/components/ui/tooltip';
+import { TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 interface BehaviorMarkerProps {
   cx: number;
   cy: number;
-  tag: BehaviorTag | string;
-  timestamp?: string;
+  tag: string;
 }
 
-export const BehaviorMarker: React.FC<BehaviorMarkerProps> = ({ cx, cy, tag, timestamp }) => {
+export const BehaviorMarker: React.FC<BehaviorMarkerProps> = ({ cx, cy, tag }) => {
   const getIcon = () => {
     switch (tag) {
       case 'Visibly Confused':
@@ -28,16 +27,13 @@ export const BehaviorMarker: React.FC<BehaviorMarkerProps> = ({ cx, cy, tag, tim
   return (
     <TooltipProvider>
       <Tooltip>
-        <TooltipTrigger asChild>
-          <g transform={`translate(${cx - 8},${cy - 8})`} style={{ cursor: 'pointer' }}>
+        <TooltipTrigger>
+          <g transform={`translate(${cx - 8},${cy - 8})`}>
             {getIcon()}
           </g>
         </TooltipTrigger>
         <TooltipContent>
-          <div>
-            <p className="font-medium">{tag}</p>
-            {timestamp && <p className="text-xs text-muted-foreground">{timestamp}</p>}
-          </div>
+          <p>{tag}</p>
         </TooltipContent>
       </Tooltip>
     </TooltipProvider>

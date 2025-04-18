@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { AttuneSidebar } from '@/components/sidebar/AttuneSidebar';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
@@ -9,9 +9,6 @@ import { Separator } from '@/components/ui/separator';
 import { Button } from '@/components/ui/button';
 import { BookOpen, Activity, AlertTriangle, Eye, Lightbulb, Download, FileText } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { BehaviorMarker } from '@/components/chart/BehaviorMarker';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Input } from '@/components/ui/input';
 
 // Mock data for the analytics chart
 const analyticsDataToday = [
@@ -37,14 +34,6 @@ const analyticsDataMonth = [
   { timestamp: 'Week 2', attention: 85, understanding: 80, transcript: "Second week of the month" },
   { timestamp: 'Week 3', attention: 75, understanding: 70, transcript: "Third week of the month" },
   { timestamp: 'Week 4', attention: 90, understanding: 85, transcript: "Fourth week of the month" },
-];
-
-// Previous lessons for dropdown
-const previousLessons = [
-  { id: "current", title: "Genetics 101" },
-  { id: "lesson1", title: "Photosynthesis Basics" },
-  { id: "lesson2", title: "Cell Division" },
-  { id: "lesson3", title: "DNA Replication" }
 ];
 
 // Mock data for the lesson outline
@@ -75,6 +64,12 @@ const lessonOutline = [
   },
 ];
 
+// AI Suggestions for teaching
+const aiSuggestions = [
+  "Take a break before starting practice problems",
+  "Jonathan doesn't like to be called on unless he intentionally raises his hand. His attention decreased significantly"
+];
+
 // Helper to determine the status background colors in neumorphic style
 const getStatusStyles = (status: string) => {
   switch (status) {
@@ -103,56 +98,6 @@ const StatusIcon = ({ status }: { status: string }) => {
   }
 };
 
-const LessonHeader = ({ lessonTitle, setLessonTitle, previousLessons }: { 
-  lessonTitle: string; 
-  setLessonTitle: React.Dispatch<React.SetStateAction<string>>;
-  previousLessons: Array<{ id: string; title: string }>;
-}) => {
-  const [isEditing, setIsEditing] = useState(false);
-
-  return (
-    <div className="flex items-center justify-between mb-4">
-      <div className="flex items-center">
-        <BookOpen className="mr-2 text-[hsl(var(--attune-purple))]" />
-        {isEditing ? (
-          <Input
-            className="w-60 text-xl font-semibold"
-            value={lessonTitle}
-            onChange={(e) => setLessonTitle(e.target.value)}
-            onBlur={() => setIsEditing(false)}
-            onKeyDown={(e) => e.key === 'Enter' && setIsEditing(false)}
-            autoFocus
-          />
-        ) : (
-          <h2 
-            className="text-xl font-semibold text-[hsl(var(--attune-purple))] cursor-pointer"
-            onDoubleClick={() => setIsEditing(true)}
-          >
-            {lessonTitle}
-          </h2>
-        )}
-        <div className="ml-4">
-          <Select onValueChange={(value) => {
-            const lesson = previousLessons.find(l => l.id === value);
-            if (lesson) setLessonTitle(lesson.title);
-          }}>
-            <SelectTrigger className="w-[180px]">
-              <SelectValue placeholder="Previous lessons" />
-            </SelectTrigger>
-            <SelectContent>
-              {previousLessons.map(lesson => (
-                <SelectItem key={lesson.id} value={lesson.id}>
-                  {lesson.title}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-      </div>
-    </div>
-  );
-};
-
 const LessonOutlineCard = ({ item }: { item: typeof lessonOutline[0] }) => {
   const statusStyles = getStatusStyles(item.status);
   
@@ -168,7 +113,7 @@ const LessonOutlineCard = ({ item }: { item: typeof lessonOutline[0] }) => {
   );
 };
 
-const UnderstandingSummary = ({ summaryData }: { summaryData: any }) => {
+const UnderstandingSummary = () => {
   // Calculate understanding percentage from mock data
   const totalSegments = lessonOutline.length;
   const attentiveSegments = lessonOutline.filter(segment => segment.status === 'attentive').length;
@@ -228,7 +173,7 @@ const UnderstandingSummary = ({ summaryData }: { summaryData: any }) => {
   );
 };
 
-const AISuggestionsSection = ({ suggestions }: { suggestions: string[] }) => {
+const AISuggestionsSection = () => {
   return (
     <div className="rounded-3xl p-6 bg-gray-50 shadow-[5px_5px_15px_rgba(0,0,0,0.05),_-5px_-5px_15px_rgba(255,255,255,0.8)]">
       <div className="flex items-center mb-4">
@@ -236,7 +181,7 @@ const AISuggestionsSection = ({ suggestions }: { suggestions: string[] }) => {
         <h2 className="text-xl font-semibold text-[hsl(var(--attune-purple))]">AI Suggestions</h2>
       </div>
       <div className="space-y-3">
-        {suggestions.map((suggestion, index) => (
+        {aiSuggestions.map((suggestion, index) => (
           <div 
             key={index} 
             className="rounded-xl py-2 px-4 bg-white border border-purple-100 shadow-[2px_2px_5px_rgba(0,0,0,0.05),_-2px_-2px_5px_rgba(255,255,255,0.8)]"
@@ -249,69 +194,11 @@ const AISuggestionsSection = ({ suggestions }: { suggestions: string[] }) => {
   );
 };
 
-const generateConfusionData = (data: any[]) => {
-  return data.map(item => ({
-    ...item,
-    confusion: item.understanding / 100  // Convert understanding to 0-1 scale for confusion
-  }));
-};
-
 const AnalyticsPage = () => {
   const [timeRange, setTimeRange] = useState<'today' | 'week' | 'month'>('today');
-  const [lessonTitle, setLessonTitle] = useState("Genetics 101");
-  const [sessionData, setSessionData] = useState<any>(null);
-  const [confusionData, setConfusionData] = useState<any[]>([]);
-  const [transcript, setTranscript] = useState<string>("");
-  const [aiSuggestions, setAiSuggestions] = useState<string[]>([
-    "Take a break before starting practice problems",
-    "Jonathan doesn't like to be called on unless he intentionally raises his hand. His attention decreased significantly"
-  ]);
-  
   const { toast } = useToast();
   
-  useEffect(() => {
-    // Check for session data from recording
-    const savedSessionData = sessionStorage.getItem('sessionSummary');
-    if (savedSessionData) {
-      try {
-        const parsedData = JSON.parse(savedSessionData);
-        setSessionData(parsedData);
-        
-        // Set confusion data if available
-        if (parsedData.confusionData?.length) {
-          // Format the data for the chart
-          const formattedData = parsedData.confusionData.map((item: any) => ({
-            timestamp: item.timestamp.substring(11, 16), // Extract time part
-            understanding: Math.round((1 - item.confusion) * 100), // Convert confusion to understanding
-            attention: Math.round(Math.random() * 30 + 70), // Random attention values for demo
-            transcript: item.text || "Transcript not available"
-          }));
-          
-          setConfusionData(formattedData);
-        }
-        
-        // Set transcript if available
-        if (parsedData.fullTranscript) {
-          setTranscript(parsedData.fullTranscript);
-        }
-        
-        // Toast to notify the user
-        toast({
-          title: "Session Data Loaded",
-          description: "Analytics from your recent recording session have been loaded.",
-        });
-        
-      } catch (error) {
-        console.error("Error parsing session data", error);
-      }
-    }
-  }, [toast]);
-  
   const getDataByTimeRange = () => {
-    if (confusionData.length > 0) {
-      return confusionData;
-    }
-    
     switch (timeRange) {
       case 'today':
         return analyticsDataToday;
@@ -359,37 +246,38 @@ const AnalyticsPage = () => {
           
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
             <div className="lg:col-span-2 rounded-3xl p-6 bg-gray-50 shadow-[5px_5px_15px_rgba(0,0,0,0.05),_-5px_-5px_15px_rgba(255,255,255,0.8)]">
-              <LessonHeader 
-                lessonTitle={lessonTitle}
-                setLessonTitle={setLessonTitle}
-                previousLessons={previousLessons}
-              />
-              <div className="flex items-center justify-end mb-4">
-                <div className="flex rounded-lg overflow-hidden shadow-[2px_2px_5px_rgba(0,0,0,0.08)]">
-                  <Button
-                    variant={timeRange === 'today' ? 'default' : 'outline'}
-                    className={`rounded-r-none border-r-0 ${timeRange === 'today' ? 'bg-[hsl(var(--attune-purple))]' : ''}`}
-                    size="sm"
-                    onClick={() => setTimeRange('today')}
-                  >
-                    Today
-                  </Button>
-                  <Button
-                    variant={timeRange === 'week' ? 'default' : 'outline'}
-                    className={`rounded-none border-x-0 ${timeRange === 'week' ? 'bg-[hsl(var(--attune-purple))]' : ''}`}
-                    size="sm"
-                    onClick={() => setTimeRange('week')}
-                  >
-                    This Week
-                  </Button>
-                  <Button
-                    variant={timeRange === 'month' ? 'default' : 'outline'}
-                    className={`rounded-l-none border-l-0 ${timeRange === 'month' ? 'bg-[hsl(var(--attune-purple))]' : ''}`}
-                    size="sm"
-                    onClick={() => setTimeRange('month')}
-                  >
-                    This Month
-                  </Button>
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center">
+                  <BookOpen className="mr-2 text-[hsl(var(--attune-purple))]" />
+                  <h2 className="text-xl font-semibold text-[hsl(var(--attune-purple))]">Lesson Title</h2>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="flex rounded-lg overflow-hidden shadow-[2px_2px_5px_rgba(0,0,0,0.08)]">
+                    <Button
+                      variant={timeRange === 'today' ? 'default' : 'outline'}
+                      className={`rounded-r-none border-r-0 ${timeRange === 'today' ? 'bg-[hsl(var(--attune-purple))]' : ''}`}
+                      size="sm"
+                      onClick={() => setTimeRange('today')}
+                    >
+                      Today
+                    </Button>
+                    <Button
+                      variant={timeRange === 'week' ? 'default' : 'outline'}
+                      className={`rounded-none border-x-0 ${timeRange === 'week' ? 'bg-[hsl(var(--attune-purple))]' : ''}`}
+                      size="sm"
+                      onClick={() => setTimeRange('week')}
+                    >
+                      This Week
+                    </Button>
+                    <Button
+                      variant={timeRange === 'month' ? 'default' : 'outline'}
+                      className={`rounded-l-none border-l-0 ${timeRange === 'month' ? 'bg-[hsl(var(--attune-purple))]' : ''}`}
+                      size="sm"
+                      onClick={() => setTimeRange('month')}
+                    >
+                      This Month
+                    </Button>
+                  </div>
                 </div>
               </div>
               <div className="h-[300px] w-full">
@@ -429,16 +317,12 @@ const AnalyticsPage = () => {
               </div>
               <div className="mt-6">
                 <h3 className="text-lg font-medium text-[hsl(var(--attune-purple))] mb-2">Session Transcript</h3>
-                <div className="max-h-40 overflow-y-auto rounded-xl border border-gray-200 p-3 shadow-inner bg-white font-mono">
-                  {transcript ? (
-                    <pre className="whitespace-pre-wrap text-sm">{transcript}</pre>
-                  ) : (
-                    getDataByTimeRange().map((item, index) => (
-                      <div key={index} className="mb-2">
-                        <span className="text-sm">{item.transcript}</span>
-                      </div>
-                    ))
-                  )}
+                <div className="max-h-40 overflow-y-auto rounded-xl border border-gray-200 p-3 shadow-inner bg-white">
+                  {getDataByTimeRange().map((item, index) => (
+                    <div key={index} className="mb-2">
+                      <span className="text-sm">{item.transcript}</span>
+                    </div>
+                  ))}
                 </div>
               </div>
             </div>
@@ -456,11 +340,11 @@ const AnalyticsPage = () => {
                 </div>
               </div>
               
-              <UnderstandingSummary summaryData={sessionData} />
+              <UnderstandingSummary />
             </div>
           </div>
           
-          <AISuggestionsSection suggestions={aiSuggestions} />
+          <AISuggestionsSection />
         </div>
       </div>
     </div>
