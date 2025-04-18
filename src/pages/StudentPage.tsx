@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { AttuneSidebar } from '@/components/sidebar/AttuneSidebar';
@@ -10,9 +11,6 @@ import { Textarea } from '@/components/ui/textarea';
 import { Separator } from '@/components/ui/separator';
 import { BookOpen, Activity, AlertTriangle, Eye, Download, FileText, Lightbulb } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { BehaviorMarker } from '@/components/chart/BehaviorMarker';
-import type { BehaviorEvent } from '@/types/BehaviorEvent';
-import type { BehaviorTag } from '@/types/BehaviorEvent';
 
 interface StudentData {
   id: number;
@@ -159,22 +157,6 @@ const StatusIcon = ({ status }: { status: string }) => {
   }
 };
 
-// Add mock behavior events
-const behaviorEventsByStudent = {
-  'jonathan': [
-    { id: '1', tag: 'Verbal Outburst', timestamp: '10:00 AM', studentId: 'jonathan' },
-    { id: '2', tag: 'Visibly Confused', timestamp: '11:00 AM', studentId: 'jonathan' },
-  ],
-  'jp': [
-    { id: '3', tag: 'Distracting Others', timestamp: '9:00 AM', studentId: 'jp' },
-    { id: '4', tag: 'Verbal Outburst', timestamp: '1:00 PM', studentId: 'jp' },
-  ],
-  'cooper': [
-    { id: '5', tag: 'Visibly Confused', timestamp: '10:00 AM', studentId: 'cooper' },
-    { id: '6', tag: 'Distracting Others', timestamp: '2:00 PM', studentId: 'cooper' },
-  ],
-} as Record<string, BehaviorEvent[]>;
-
 const StudentPage = () => {
   const { studentId } = useParams<{ studentId: string }>();
   const student = studentId ? studentsData[studentId] : null;
@@ -268,20 +250,6 @@ const StudentPage = () => {
       default:
         return "Progress";
     }
-  };
-
-  const handleTagClick = (tag: string) => {
-    const newEvent: BehaviorEvent = {
-      id: Date.now().toString(),
-      tag: tag as BehaviorTag,
-      timestamp: timeRange === 'day' ? new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : timeRange === 'week' ? 'Today' : 'This Week',
-      studentId: studentId!
-    };
-
-    toast({
-      title: "Behavior Tagged",
-      description: `Added ${tag} behavior tag for ${student?.name}`,
-    });
   };
 
   return (
@@ -381,20 +349,6 @@ const StudentPage = () => {
                         fill="#ADD8E6"
                         fillOpacity={0.3}
                       />
-                      {studentId && behaviorEventsByStudent[studentId]?.map((event) => {
-                        const dataPoint = chartData.find(d => d.timestamp === event.timestamp);
-                        if (!dataPoint) return null;
-
-                        const index = chartData.indexOf(dataPoint);
-                        return (
-                          <BehaviorMarker
-                            key={event.id}
-                            cx={index * (100 / (chartData.length - 1)) + 50} // Approximate X position
-                            cy={100 - dataPoint.attention} // Y position based on attention value
-                            tag={event.tag}
-                          />
-                        );
-                      })}
                     </AreaChart>
                   </ResponsiveContainer>
                 </ChartContainer>
