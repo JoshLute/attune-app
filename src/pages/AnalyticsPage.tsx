@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { AttuneSidebar } from '@/components/sidebar/AttuneSidebar';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
@@ -9,6 +8,7 @@ import { Separator } from '@/components/ui/separator';
 import { Button } from '@/components/ui/button';
 import { BookOpen, Activity, AlertTriangle, Eye, Lightbulb, Download, FileText } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import LessonHeader from '@/components/analytics/LessonHeader';
 
 // Mock data for the analytics chart
 const analyticsDataToday = [
@@ -198,6 +198,11 @@ const AnalyticsPage = () => {
   const [timeRange, setTimeRange] = useState<'today' | 'week' | 'month'>('today');
   const { toast } = useToast();
   
+  const handleLessonChange = (lessonId: string) => {
+    // In a real app, this would fetch the data for the selected lesson
+    console.log('Selected lesson:', lessonId);
+  };
+
   const getDataByTimeRange = () => {
     switch (timeRange) {
       case 'today':
@@ -246,6 +251,11 @@ const AnalyticsPage = () => {
           
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
             <div className="lg:col-span-2 rounded-3xl p-6 bg-gray-50 shadow-[5px_5px_15px_rgba(0,0,0,0.05),_-5px_-5px_15px_rgba(255,255,255,0.8)]">
+              <LessonHeader 
+                currentLesson="Lesson Title" 
+                onLessonChange={handleLessonChange}
+              />
+              
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center">
                   <BookOpen className="mr-2 text-[hsl(var(--attune-purple))]" />
