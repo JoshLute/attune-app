@@ -1,17 +1,4 @@
 
-import React from 'react';
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
-
-// Mock data for lesson outline
-const lessonOutline = [
-  { id: 1, topic: "Introduction to Quantum Physics", status: "attentive", timestamp: "00:00:30" },
-  { id: 2, topic: "Wave-Particle Duality", status: "confused", timestamp: "00:01:15" },
-  { id: 3, topic: "Heisenberg Uncertainty Principle", status: "attentive", timestamp: "00:01:45" },
-  { id: 4, topic: "Quantum Entanglement", status: "attentive", timestamp: "00:02:30" },
-  { id: 5, topic: "Quantum Computing Applications", status: "confused", timestamp: "00:03:10" },
-  { id: 6, topic: "Final Review", status: "attentive", timestamp: "00:04:00" }
-];
-
 const UnderstandingSummary = () => {
   // Calculate understanding percentage from mock data
   const totalSegments = lessonOutline.length;
@@ -53,18 +40,3 @@ const UnderstandingSummary = () => {
     </Card>
   );
 };
-
-// Main AnalyticsPage component with default export
-const AnalyticsPage = () => {
-  return (
-    <div className="container mx-auto p-6">
-      <h1 className="text-2xl font-bold mb-6">Analytics Dashboard</h1>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <UnderstandingSummary />
-        {/* Additional analytics components can be added here */}
-      </div>
-    </div>
-  );
-};
-
-export default AnalyticsPage;
