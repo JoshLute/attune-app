@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Separator } from '@/components/ui/separator';
 import { Button } from '@/components/ui/button';
-import { BookOpen, Activity, AlertTriangle, Eye, Lightbulb, Download, FileText } from 'lucide-react';
+import { Activity, AlertTriangle, Eye, Lightbulb, Download, FileText } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import LessonHeader from '@/components/analytics/LessonHeader';
 
@@ -252,15 +252,11 @@ const AnalyticsPage = () => {
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
             <div className="lg:col-span-2 rounded-3xl p-6 bg-gray-50 shadow-[5px_5px_15px_rgba(0,0,0,0.05),_-5px_-5px_15px_rgba(255,255,255,0.8)]">
               <LessonHeader 
-                currentLesson="Lesson Title" 
+                currentLesson="Genetics 101" 
                 onLessonChange={handleLessonChange}
               />
               
               <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center">
-                  <BookOpen className="mr-2 text-[hsl(var(--attune-purple))]" />
-                  <h2 className="text-xl font-semibold text-[hsl(var(--attune-purple))]">Lesson Title</h2>
-                </div>
                 <div className="flex items-center gap-2">
                   <div className="flex rounded-lg overflow-hidden shadow-[2px_2px_5px_rgba(0,0,0,0.08)]">
                     <Button
@@ -290,6 +286,7 @@ const AnalyticsPage = () => {
                   </div>
                 </div>
               </div>
+
               <div className="h-[300px] w-full">
                 <ChartContainer
                   config={chartConfig}

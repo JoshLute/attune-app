@@ -25,7 +25,7 @@ interface LessonHeaderProps {
 
 const LessonHeader = ({ currentLesson, onLessonChange }: LessonHeaderProps) => {
   const [isEditing, setIsEditing] = useState(false);
-  const [lessonTitle, setLessonTitle] = useState(currentLesson);
+  const [lessonTitle, setLessonTitle] = useState('Genetics 101');
 
   const handleDoubleClick = () => {
     setIsEditing(true);
@@ -42,27 +42,25 @@ const LessonHeader = ({ currentLesson, onLessonChange }: LessonHeaderProps) => {
   };
 
   return (
-    <div className="flex items-center justify-between mb-4">
-      <div className="flex items-center gap-4">
-        <BookOpen className="text-[hsl(var(--attune-purple))]" />
-        {isEditing ? (
-          <Input
-            value={lessonTitle}
-            onChange={(e) => setLessonTitle(e.target.value)}
-            onBlur={handleBlur}
-            onKeyDown={handleKeyDown}
-            className="max-w-[200px] text-xl font-semibold"
-            autoFocus
-          />
-        ) : (
-          <h2 
-            className="text-xl font-semibold text-[hsl(var(--attune-purple))] cursor-pointer" 
-            onDoubleClick={handleDoubleClick}
-          >
-            {lessonTitle}
-          </h2>
-        )}
-      </div>
+    <div className="flex items-center gap-4 mb-4">
+      <BookOpen className="text-[hsl(var(--attune-purple))]" />
+      {isEditing ? (
+        <Input
+          value={lessonTitle}
+          onChange={(e) => setLessonTitle(e.target.value)}
+          onBlur={handleBlur}
+          onKeyDown={handleKeyDown}
+          className="max-w-[200px] text-xl font-semibold"
+          autoFocus
+        />
+      ) : (
+        <h2 
+          className="text-xl font-semibold text-[hsl(var(--attune-purple))] cursor-pointer" 
+          onDoubleClick={handleDoubleClick}
+        >
+          {lessonTitle}
+        </h2>
+      )}
       <Select onValueChange={onLessonChange}>
         <SelectTrigger className="w-[200px]">
           <SelectValue placeholder="Previous lessons" />
