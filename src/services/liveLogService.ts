@@ -2,12 +2,16 @@
 import { createClient } from '@supabase/supabase-js';
 import { LiveLogEntry } from '@/types/liveLog';
 
-// These values should be set to your actual Supabase project details
-// You can get these from your Supabase project settings
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://your-project.supabase.co';
-const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'your-anon-key';
+// Get environment variables
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
+const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
 
-console.log('Supabase URL:', supabaseUrl);
+console.log('Supabase URL configured:', !!supabaseUrl);
+console.log('Supabase Anon Key configured:', !!supabaseKey);
+
+if (!supabaseUrl || !supabaseKey) {
+  console.warn('Supabase environment variables not properly configured');
+}
 
 const supabase = createClient(supabaseUrl, supabaseKey);
 

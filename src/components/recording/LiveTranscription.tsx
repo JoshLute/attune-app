@@ -10,6 +10,7 @@ interface Props {
 
 export const LiveTranscription = ({ isRecording, onTranscriptUpdate }: Props) => {
   const [status, setStatus] = useState<'idle' | 'recording' | 'processing' | 'error'>('idle');
+  const [errorMessage, setErrorMessage] = useState<string>('');
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
   const [recordingInterval, setRecordingInterval] = useState<NodeJS.Timeout | null>(null);
@@ -49,6 +50,7 @@ export const LiveTranscription = ({ isRecording, onTranscriptUpdate }: Props) =>
 
       mediaRecorderRef.current.start();
       setStatus('recording');
+      setErrorMessage('');
       
       // Process audio at regular intervals (every 10 seconds)
       const interval = setInterval(() => {
@@ -62,6 +64,7 @@ export const LiveTranscription = ({ isRecording, onTranscriptUpdate }: Props) =>
     } catch (error) {
       console.error('Error starting recording:', error);
       setStatus('error');
+      setErrorMessage('Microphone access error');
       toast({
         title: "Recording error",
         description: "Could not access your microphone. Please check your browser permissions.",
@@ -96,27 +99,44 @@ export const LiveTranscription = ({ isRecording, onTranscriptUpdate }: Props) =>
       const formData = new FormData();
       formData.append('audio', audioBlob);
       
-      // Use the Supabase Edge Function URL with import.meta.env instead of process.env
-      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://your-project.supabase.co';
+      // Get the Supabase URL from environment variables
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      
+      if (!supabaseUrl) {
+        throw new Error("VITE_SUPABASE_URL environment variable is not set");
+      }
+      
       const transcribeUrl = `${supabaseUrl}/functions/v1/transcribe`;
       
       console.log('Sending transcription request to:', transcribeUrl);
+      console.log('Audio blob size:', audioBlob.size, 'bytes');
       
-      const response = await fetch(transcribeUrl, {
-        method: 'POST',
-        body: formData,
-      });
-      
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error(`Transcription error (${response.status}):`, errorText);
-        throw new Error(`Transcription failed: ${response.status} ${errorText}`);
-      }
-      
-      const data = await response.json();
-      
-      if (data.text) {
-        onTranscriptUpdate(data.text);
+      // Add extra debugging for fetch request
+      try {
+        const response = await fetch(transcribeUrl, {
+          method: 'POST',
+          body: formData,
+        });
+        
+        console.log('Response status:', response.status);
+        
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error(`Transcription error (${response.status}):`, errorText);
+          throw new Error(`Transcription failed: ${response.status} ${errorText || 'Unknown error'}`);
+        }
+        
+        const data = await response.json();
+        console.log('Transcription response:', data);
+        
+        if (data.text) {
+          onTranscriptUpdate(data.text);
+        } else {
+          console.warn('No text in transcription response:', data);
+        }
+      } catch (fetchError) {
+        console.error('Fetch error:', fetchError);
+        throw new Error(`Network error: ${fetchError.message || 'Failed to connect to transcription service'}`);
       }
       
       // Clear the audio chunks for the next recording
@@ -125,12 +145,13 @@ export const LiveTranscription = ({ isRecording, onTranscriptUpdate }: Props) =>
       setStatus('recording');
     } catch (error) {
       console.error('Error transcribing audio:', error);
+      setStatus('error');
+      setErrorMessage(error.message || 'Unknown error');
       toast({
         title: "Transcription failed",
-        description: "Could not transcribe the audio. Please check your Supabase configuration.",
+        description: error.message || "Could not transcribe the audio. Please check your Supabase configuration.",
         variant: "destructive"
       });
-      setStatus('error');
     }
   };
 
@@ -153,7 +174,7 @@ export const LiveTranscription = ({ isRecording, onTranscriptUpdate }: Props) =>
       {status === 'error' && (
         <div className="flex items-center gap-2 bg-white p-2 rounded-full shadow-md">
           <div className="w-3 h-3 bg-yellow-500 rounded-full"></div>
-          <span className="text-xs">Error</span>
+          <span className="text-xs">Error: {errorMessage}</span>
         </div>
       )}
     </div>
