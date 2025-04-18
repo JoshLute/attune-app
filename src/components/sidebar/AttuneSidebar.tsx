@@ -10,6 +10,7 @@ import { useLocation } from 'react-router-dom';
 
 export function AttuneSidebar() {
   const location = useLocation();
+  const isRecording = location.pathname === '/recording';
   
   // Mock data for student cards
   const students = [
@@ -103,9 +104,10 @@ export function AttuneSidebar() {
                 </defs>
               </svg>
             } 
-            label="Start New Recording"
+            label={isRecording ? "Recording in Progress" : "Start New Recording"}
             href="/recording"
             isActive={location.pathname === '/recording'}
+            isRecording={isRecording}
           />
         </SidebarSection>
       </div>
