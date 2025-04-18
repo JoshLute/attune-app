@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { AttuneSidebar } from '@/components/sidebar/AttuneSidebar';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
@@ -7,11 +6,12 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Separator } from '@/components/ui/separator';
 import { Button } from '@/components/ui/button';
-import { BookOpen, Activity, AlertTriangle, Eye, Lightbulb, Download, FileText } from 'lucide-react';
+import { Textarea } from '@/components/ui/textarea';
+import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Eye, AlertTriangle, Activity, BookOpen, Download, FileText, Lightbulb } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { BehaviorMarker } from '@/components/chart/BehaviorMarker';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Input } from '@/components/ui/input';
 
 // Mock data for the analytics chart
 const analyticsDataToday = [
