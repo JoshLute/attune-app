@@ -1,5 +1,6 @@
 
 import { createClient } from '@supabase/supabase-js';
+import { LiveLogEntry } from '@/types/liveLog';
 
 const supabaseUrl = 'https://your-project.supabase.co';
 const supabaseKey = 'your-anon-key';
