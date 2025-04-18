@@ -17,19 +17,22 @@ export function AttuneSidebar() {
       id: 'jonathan',
       name: 'Jonathan Sum',
       status: 'attentive' as const,
-      avatarUrl: 'https://api.dicebear.com/7.x/personas/svg?seed=jonathan'
+      avatarUrl: 'https://api.dicebear.com/7.x/personas/svg?seed=jonathan',
+      understanding: 90
     },
     {
       id: 'jp',
       name: 'JP Vela',
       status: 'confused' as const,
-      avatarUrl: 'https://api.dicebear.com/7.x/personas/svg?seed=jp'
+      avatarUrl: 'https://api.dicebear.com/7.x/personas/svg?seed=jp',
+      understanding: 20
     },
     {
       id: 'cooper',
       name: 'Cooper Randeen',
       status: 'inattentive' as const,
-      avatarUrl: 'https://api.dicebear.com/7.x/personas/svg?seed=cooper'
+      avatarUrl: 'https://api.dicebear.com/7.x/personas/svg?seed=cooper',
+      understanding: 50
     }
   ];
 
@@ -50,7 +53,7 @@ export function AttuneSidebar() {
               key={student.id}
               id={student.id}
               name={student.name}
-              status={student.status}
+              understanding={student.understanding}
               avatarUrl={student.avatarUrl}
             />
           ))}

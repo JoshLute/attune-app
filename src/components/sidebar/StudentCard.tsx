@@ -8,9 +8,10 @@ interface StudentCardProps {
   avatarUrl: string;
   id: string;
   understanding?: number;
+  status?: 'attentive' | 'confused' | 'inattentive';
 }
 
-export function StudentCard({ name, avatarUrl, id, understanding = 100 }: StudentCardProps) {
+export function StudentCard({ name, avatarUrl, id, understanding, status }: StudentCardProps) {
   const [isActive, setIsActive] = useState(false);
   const navigate = useNavigate();
   
@@ -18,7 +19,25 @@ export function StudentCard({ name, avatarUrl, id, understanding = 100 }: Studen
     navigate(`/student/${id}`);
   };
 
-  const isConfused = understanding < 25;
+  // Convert the status to an understanding value if provided
+  let understandingValue = understanding;
+  if (status && !understanding) {
+    switch (status) {
+      case 'confused':
+        understandingValue = 20;
+        break;
+      case 'inattentive':
+        understandingValue = 50;
+        break;
+      case 'attentive':
+      default:
+        understandingValue = 90;
+        break;
+    }
+  }
+
+  // Only show confused tag if understanding is below 25%
+  const isConfused = understandingValue !== undefined && understandingValue < 25;
 
   return (
     <div 
