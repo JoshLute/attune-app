@@ -1,8 +1,9 @@
 
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { Bot, Send } from 'lucide-react';
+import { Bot, Send, Loader2 } from 'lucide-react';
+import { useToast } from "@/hooks/use-toast";
 
 interface Message {
   id: string;
@@ -21,8 +22,16 @@ export const AIChat = () => {
       timestamp: new Date()
     }
   ]);
+  const [isLoading, setIsLoading] = useState(false);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const { toast } = useToast();
 
-  const handleSendMessage = () => {
+  // Scroll to bottom of messages
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages]);
+
+  const handleSendMessage = async () => {
     if (!message.trim()) return;
 
     // Add user message
@@ -33,25 +42,65 @@ export const AIChat = () => {
       timestamp: new Date()
     };
 
-    setMessages([...messages, userMessage]);
+    setMessages(prev => [...prev, userMessage]);
     setMessage('');
+    setIsLoading(true);
 
-    // Simulate AI response (in a real app, this would be an API call)
-    setTimeout(() => {
+    try {
+      // Fetch response from Gemini API via Supabase Edge Function
+      const response = await fetch('/api/gemini-chat', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          messages: [...messages, userMessage].map(msg => ({
+            role: msg.isAI ? 'assistant' : 'user',
+            content: msg.content
+          })),
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('AI response failed');
+      }
+
+      const data = await response.json();
+      
       const aiMessage: Message = {
         id: (Date.now() + 1).toString(),
-        content: "Based on recent data, I notice a positive trend in engagement during morning sessions. Would you like me to analyze this pattern further?",
+        content: data.response || "I couldn't process that request. Please try again.",
         isAI: true,
         timestamp: new Date()
       };
+      
       setMessages(prev => [...prev, aiMessage]);
-    }, 1000);
+    } catch (error) {
+      console.error('Error fetching AI response:', error);
+      toast({
+        title: "AI Response Error",
+        description: "Failed to get a response from the AI. Please try again.",
+        variant: "destructive"
+      });
+      
+      // Add error message
+      const errorMessage: Message = {
+        id: (Date.now() + 1).toString(),
+        content: "Sorry, I encountered an error processing your request. Please try again.",
+        isAI: true,
+        timestamp: new Date()
+      };
+      
+      setMessages(prev => [...prev, errorMessage]);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
     <div className="rounded-xl bg-gradient-to-br from-white to-[#F1F0FB] p-6 shadow-[5px_5px_15px_rgba(0,0,0,0.1),_-5px_-5px_15px_rgba(255,255,255,0.8)]">
       <div className="h-[500px] flex flex-col">
-        <div className="flex-1 overflow-y-auto mb-4 space-y-4">
+        <div className="flex-1 overflow-y-auto mb-4 space-y-4 pr-2">
           {messages.map((msg) => (
             <div
               key={msg.id}
@@ -70,10 +119,22 @@ export const AIChat = () => {
                     <span className="font-medium">AI Assistant</span>
                   </div>
                 )}
-                <p>{msg.content}</p>
+                <p className="whitespace-pre-wrap">{msg.content}</p>
               </div>
             </div>
           ))}
+          <div ref={messagesEndRef} />
+
+          {isLoading && (
+            <div className="flex justify-start">
+              <div className="rounded-xl p-4 bg-gradient-to-r from-[hsl(var(--attune-light-purple))] to-white">
+                <div className="flex items-center">
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  <span className="font-medium">Thinking...</span>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
 
         <div className="flex gap-2">
@@ -82,9 +143,20 @@ export const AIChat = () => {
             onChange={(e) => setMessage(e.target.value)}
             placeholder="Ask about student trends, behavior patterns, or suggestions..."
             className="min-h-[60px]"
+            disabled={isLoading}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                handleSendMessage();
+              }
+            }}
           />
-          <Button onClick={handleSendMessage} className="px-4">
-            <Send className="h-4 w-4" />
+          <Button 
+            onClick={handleSendMessage} 
+            className="px-4" 
+            disabled={isLoading || !message.trim()}
+          >
+            {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
           </Button>
         </div>
       </div>

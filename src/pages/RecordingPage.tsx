@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
 import { useNavigate } from "react-router-dom";
 import { RecordingSetup } from "@/components/recording/RecordingSetup";
+import { LiveTranscription } from "@/components/recording/LiveTranscription";
 
 type StudentStatus = 'Attentive' | 'Confused' | 'Inattentive';
 
@@ -83,31 +84,9 @@ const RecordingPage = () => {
       });
     }, 4000);
 
-    // Simulate transcript generation
-    const phrases = [
-      "I think I understand this concept now.",
-      "Could you explain that part again?",
-      "This makes a lot more sense than before.",
-      "I'm having trouble with this section.",
-      "Oh, I see how that works now!",
-      "Wait, how does this relate to what we learned last week?",
-      "That's an interesting approach to solving the problem."
-    ];
-    
-    const transcriptInterval = setInterval(() => {
-      const randomPhrase = phrases[Math.floor(Math.random() * phrases.length)];
-      setTranscript(prev => {
-        const newTranscript = [...prev, randomPhrase];
-        // Store transcript in sessionStorage
-        sessionStorage.setItem('currentTranscript', JSON.stringify(newTranscript));
-        return newTranscript;
-      });
-    }, 3000);
-    
     return () => {
       clearInterval(understandingInterval);
       clearInterval(attentionInterval);
-      clearInterval(transcriptInterval);
     };
   };
 
@@ -117,6 +96,18 @@ const RecordingPage = () => {
 
   const handleEndSession = () => {
     navigate("/analytics");
+  };
+
+  const handleTranscriptUpdate = (text: string) => {
+    setTranscript(prev => {
+      // Split the transcript by sentences to make it more readable
+      const sentences = text.split(/[.!?]+/).filter(sentence => sentence.trim().length > 0);
+      
+      const newTranscript = [...prev, ...sentences.map(s => s.trim())];
+      // Store transcript in sessionStorage
+      sessionStorage.setItem('currentTranscript', JSON.stringify(newTranscript));
+      return newTranscript;
+    });
   };
 
   const activeStudent = students.find(s => s.id === selectedStudent);
@@ -241,7 +232,7 @@ const RecordingPage = () => {
                 {/* Transcript */}
                 <div className="bg-[#F1F0FB] p-6 rounded-3xl">
                   <h3 className="text-xl font-semibold text-[hsl(var(--attune-purple))] mb-4">Live Transcript</h3>
-                  <div className="bg-white p-4 rounded-xl max-h-60 overflow-y-auto shadow-inner">
+                  <div className="bg-white p-4 rounded-xl max-h-60 overflow-y-auto shadow-inner relative">
                     {transcript.length > 0 ? (
                       transcript.map((text, index) => (
                         <p key={index} className="py-1 border-b border-gray-100 last:border-none">
@@ -251,6 +242,12 @@ const RecordingPage = () => {
                     ) : (
                       <p className="text-gray-500 italic">Waiting for speech...</p>
                     )}
+                    
+                    {/* Live transcription status indicator */}
+                    <LiveTranscription 
+                      isRecording={isRecording} 
+                      onTranscriptUpdate={handleTranscriptUpdate} 
+                    />
                   </div>
                 </div>
               </div>
