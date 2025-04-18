@@ -8,8 +8,6 @@ import { Separator } from '@/components/ui/separator';
 import { Button } from '@/components/ui/button';
 import { BookOpen, Activity, AlertTriangle, Eye, Lightbulb, Download, FileText } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
-import { Progress } from '@/components/ui/progress';
 
 // Mock data for the analytics chart
 const analyticsDataToday = [
@@ -127,12 +125,6 @@ const UnderstandingSummary = () => {
   const attentiveSegments = lessonOutline.filter(segment => segment.status === 'attentive').length;
   const understandingPercentage = Math.round((attentiveSegments / totalSegments) * 100);
   
-  // Get behavior tags from session storage
-  const behaviorTags = JSON.parse(sessionStorage.getItem('behaviorTags') || '[]');
-  const confusionPercentage = behaviorTags.filter(
-    (tag: { tag: string }) => tag.tag === 'Visibly Confused'
-  ).length / Math.max(1, behaviorTags.length) * 100;
-  
   return (
     <Card className="rounded-2xl overflow-hidden shadow-[5px_5px_15px_rgba(0,0,0,0.05),_-5px_-5px_15px_rgba(255,255,255,0.8)] border border-purple-100">
       <CardHeader className="bg-[hsl(var(--attune-light-purple))] text-white pb-3">
@@ -151,16 +143,41 @@ const UnderstandingSummary = () => {
           ></div>
         </div>
         
-        <div className="mb-4">
-          <div className="flex justify-between mb-1">
-            <span className="text-lg text-gray-600">Confusion Level</span>
-            <span className="text-2xl font-bold text-[hsl(var(--attune-purple))]">{Math.round(confusionPercentage)}%</span>
-          </div>
-          <Progress 
-            value={confusionPercentage} 
-            className="h-4 bg-gray-200"
-            indicatorColor={confusionPercentage > 50 ? '#ef4444' : '#22c55e'}
-          />
+        <div className="h-[200px] w-full mb-4">
+          <ResponsiveContainer width="100%" height="100%">
+            <PieChart>
+              <Pie
+                data={summaryData}
+                cx="50%"
+                cy="50%"
+                innerRadius={60}
+                outerRadius={80}
+                paddingAngle={5}
+                dataKey="value"
+              >
+                {summaryData.map((entry, index) => (
+                  <Cell key={`cell-${index}`} fill={entry.color} />
+                ))}
+              </Pie>
+              <Tooltip
+                content={({ active, payload }) => {
+                  if (active && payload && payload.length) {
+                    return (
+                      <div className="bg-white p-2 rounded-lg shadow border">
+                        <p className="text-sm">{`${payload[0].name}: ${payload[0].value}%`}</p>
+                      </div>
+                    );
+                  }
+                  return null;
+                }}
+              />
+              <Legend 
+                verticalAlign="bottom"
+                align="center"
+                layout="horizontal"
+              />
+            </PieChart>
+          </ResponsiveContainer>
         </div>
       </CardContent>
     </Card>
@@ -192,13 +209,6 @@ const AnalyticsPage = () => {
   const [timeRange, setTimeRange] = useState<'today' | 'week' | 'month'>('today');
   const { toast } = useToast();
   const lessonTitle = sessionStorage.getItem('currentLessonTitle') || 'Lesson Title';
-  
-  // Mock previous lessons data
-  const previousLessons = [
-    { id: '1', title: 'Introduction to Photosynthesis' },
-    { id: '2', title: 'Cell Division Basics' },
-    { id: '3', title: 'DNA Structure' },
-  ];
   
   const getDataByTimeRange = () => {
     switch (timeRange) {
@@ -236,25 +246,9 @@ const AnalyticsPage = () => {
       <div className="flex-1 p-6 overflow-y-auto">
         <div className="max-w-7xl mx-auto">
           <div className="flex justify-between items-center mb-6">
-            <div className="flex items-center gap-4">
-              <div>
-                <h1 className="text-3xl font-bold text-gray-800 mb-2">Analytics</h1>
-                <div className="flex items-center gap-2">
-                  <Select defaultValue={lessonTitle}>
-                    <SelectTrigger className="w-[250px]">
-                      <SelectValue placeholder="Select lesson" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value={lessonTitle}>{lessonTitle}</SelectItem>
-                      {previousLessons.map(lesson => (
-                        <SelectItem key={lesson.id} value={lesson.id}>
-                          {lesson.title}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
+            <div>
+              <h1 className="text-3xl font-bold text-gray-800 mb-2">Analytics</h1>
+              <p className="text-gray-500">Get insights from class sessions</p>
             </div>
             <Button 
               onClick={handleDownloadReport} 

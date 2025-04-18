@@ -17,11 +17,6 @@ interface Student {
   avatarUrl: string;
 }
 
-type BehaviorTag = {
-  tag: string;
-  timestamp: number;
-};
-
 const RecordingPage = () => {
   const navigate = useNavigate();
   const [isSetupDialogOpen, setIsSetupDialogOpen] = useState(true);
@@ -34,20 +29,13 @@ const RecordingPage = () => {
   const [transcript, setTranscript] = useState<string[]>([]);
   const [recordingTime, setRecordingTime] = useState(0);
   const [activeTag, setActiveTag] = useState<string | null>(null);
-  const [behaviorTags, setBehaviorTags] = useState<BehaviorTag[]>([]);
-  
+
+  // Handle recording timer
   useEffect(() => {
     let timer: NodeJS.Timeout;
     if (isRecording) {
-      // Reset metrics to start from 0
-      setUnderstanding(0);
-      setAttention(0);
-      
       timer = setInterval(() => {
         setRecordingTime(prev => prev + 1);
-        // Gradually increase metrics over time
-        setUnderstanding(prev => Math.min(100, prev + Math.random() * 2));
-        setAttention(prev => Math.min(100, prev + Math.random() * 2));
       }, 1000);
     }
     return () => {
@@ -79,7 +67,6 @@ const RecordingPage = () => {
     setIsRecording(true);
     // Store the lesson title in sessionStorage so it persists across pages
     sessionStorage.setItem('currentLessonTitle', lessonTitle);
-    sessionStorage.setItem('behaviorTags', JSON.stringify([]));
     
     // Simulate changing metrics over time
     const understandingInterval = setInterval(() => {
@@ -125,12 +112,7 @@ const RecordingPage = () => {
   };
 
   const handleBehaviorTag = (tag: string) => {
-    const newTag = { tag, timestamp: recordingTime };
-    setBehaviorTags(prev => {
-      const updatedTags = [...prev, newTag];
-      sessionStorage.setItem('behaviorTags', JSON.stringify(updatedTags));
-      return updatedTags;
-    });
+    setActiveTag(activeTag === tag ? null : tag);
   };
 
   const handleEndSession = () => {
@@ -214,32 +196,17 @@ const RecordingPage = () => {
               </div>
               
               <div className="space-y-6">
-                {/* Student Card with behavior tag buttons instead of toggles */}
-                <div className="bg-white p-6 rounded-3xl border border-gray-200 space-y-4">
-                  <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 rounded-full overflow-hidden">
-                      <img 
-                        src={activeStudent.avatarUrl} 
-                        alt={activeStudent.name} 
-                        className="w-full h-full object-cover"
-                      />
-                    </div>
-                    <h2 className="text-xl font-semibold">{activeStudent.name}</h2>
-                  </div>
-                  <div className="flex gap-2 flex-wrap">
-                    {['Visibly Confused', 'Verbal Outburst', 'Asked Question', 'Disengaged'].map((tag) => (
-                      <Button
-                        key={tag}
-                        variant="outline"
-                        onClick={() => handleBehaviorTag(tag)}
-                        className="bg-white hover:bg-gray-50"
-                      >
-                        {tag}
-                      </Button>
-                    ))}
-                  </div>
-                </div>
-
+                {/* Student Card */}
+                <StudentRecordingCard
+                  name={activeStudent.name}
+                  avatarUrl={activeStudent.avatarUrl}
+                  understanding={understanding}
+                  attention={attention}
+                  recordingTime={recordingTime}
+                  onTagClick={handleBehaviorTag}
+                  activeTag={activeTag}
+                />
+                
                 {/* Live Metrics */}
                 <div className="bg-[#F1F0FB] p-6 rounded-3xl space-y-4">
                   <h3 className="text-xl font-semibold text-[hsl(var(--attune-purple))]">Live Metrics</h3>
