@@ -96,9 +96,8 @@ export const LiveTranscription = ({ isRecording, onTranscriptUpdate }: Props) =>
       const formData = new FormData();
       formData.append('audio', audioBlob);
       
-      // Use the complete Supabase Edge Function URL instead of relative path
-      // This URL should be your actual Supabase project URL with the function name
-      const supabaseUrl = process.env.SUPABASE_URL || 'https://your-project.supabase.co';
+      // Use the Supabase Edge Function URL with import.meta.env instead of process.env
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://your-project.supabase.co';
       const transcribeUrl = `${supabaseUrl}/functions/v1/transcribe`;
       
       console.log('Sending transcription request to:', transcribeUrl);
@@ -106,10 +105,6 @@ export const LiveTranscription = ({ isRecording, onTranscriptUpdate }: Props) =>
       const response = await fetch(transcribeUrl, {
         method: 'POST',
         body: formData,
-        headers: {
-          // No Content-Type header for FormData
-          // It will be set automatically with the correct boundary
-        }
       });
       
       if (!response.ok) {

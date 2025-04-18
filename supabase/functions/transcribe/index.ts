@@ -13,7 +13,7 @@ serve(async (req) => {
     
     if (!LEMONFOX_API_KEY) {
       return new Response(
-        JSON.stringify({ error: 'Whisper API key not configured' }),
+        JSON.stringify({ error: 'Lemonfox API key not configured' }),
         { 
           status: 500,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
@@ -29,24 +29,25 @@ serve(async (req) => {
       throw new Error("No audio file provided");
     }
     
-    // Prepare data for Lemonfox Whisper API
-    const whisperFormData = new FormData();
-    whisperFormData.append('file', audioBlob);
-    whisperFormData.append('model', 'whisper-1');
-    whisperFormData.append('language', 'en');
+    // Prepare data for Lemonfox API
+    const lemonfoxFormData = new FormData();
+    lemonfoxFormData.append('file', audioBlob);
+    lemonfoxFormData.append('model', 'whisper-1');
+    lemonfoxFormData.append('language', 'en');
     
-    // Send to Lemonfox Whisper API
-    const response = await fetch('https://api.lemonfox.ai/v1/audio/transcriptions', {
+    // Send to Lemonfox API
+    const LEMONFOX_ENDPOINT = "https://api.lemonfox.ai/v1/audio/transcriptions";
+    const response = await fetch(LEMONFOX_ENDPOINT, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${LEMONFOX_API_KEY}`,
       },
-      body: whisperFormData,
+      body: lemonfoxFormData,
     });
     
     if (!response.ok) {
       const errorText = await response.text();
-      throw new Error(`Whisper API error: ${response.status} ${errorText}`);
+      throw new Error(`Lemonfox API error: ${response.status} ${errorText}`);
     }
     
     const data = await response.json();
