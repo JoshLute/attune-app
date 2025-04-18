@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { AttuneSidebar } from '@/components/sidebar/AttuneSidebar';
-import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, PieChart, Pie, Cell } from 'recharts';
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -33,6 +33,13 @@ const analyticsDataMonth = [
   { timestamp: 'Week 2', attention: 85, understanding: 80, transcript: "Second week of the month" },
   { timestamp: 'Week 3', attention: 75, understanding: 70, transcript: "Third week of the month" },
   { timestamp: 'Week 4', attention: 90, understanding: 85, transcript: "Fourth week of the month" },
+];
+
+// Summary data for the pie chart
+const summaryData = [
+  { name: 'Attentive', value: 47, color: '#22c55e' },
+  { name: 'Confused', value: 20, color: '#ef4444' },
+  { name: 'Inattentive', value: 33, color: '#f59e0b' }
 ];
 
 // Mock data for the lesson outline
@@ -135,38 +142,43 @@ const UnderstandingSummary = () => {
             style={{ width: `${understandingPercentage}%` }}
           ></div>
         </div>
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Status</TableHead>
-              <TableHead className="text-right">Time</TableHead>
-              <TableHead className="text-right">Percentage</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            <TableRow>
-              <TableCell className="flex items-center gap-1">
-                <Eye size={14} className="text-green-600" /> Attentive
-              </TableCell>
-              <TableCell className="text-right">7m 00s</TableCell>
-              <TableCell className="text-right">47%</TableCell>
-            </TableRow>
-            <TableRow>
-              <TableCell className="flex items-center gap-1">
-                <AlertTriangle size={14} className="text-red-600" /> Confused
-              </TableCell>
-              <TableCell className="text-right">3m 00s</TableCell>
-              <TableCell className="text-right">20%</TableCell>
-            </TableRow>
-            <TableRow>
-              <TableCell className="flex items-center gap-1">
-                <Activity size={14} className="text-yellow-600" /> Inattentive
-              </TableCell>
-              <TableCell className="text-right">5m 00s</TableCell>
-              <TableCell className="text-right">33%</TableCell>
-            </TableRow>
-          </TableBody>
-        </Table>
+        
+        <div className="h-[200px] w-full mb-4">
+          <ResponsiveContainer width="100%" height="100%">
+            <PieChart>
+              <Pie
+                data={summaryData}
+                cx="50%"
+                cy="50%"
+                innerRadius={60}
+                outerRadius={80}
+                paddingAngle={5}
+                dataKey="value"
+              >
+                {summaryData.map((entry, index) => (
+                  <Cell key={`cell-${index}`} fill={entry.color} />
+                ))}
+              </Pie>
+              <Tooltip
+                content={({ active, payload }) => {
+                  if (active && payload && payload.length) {
+                    return (
+                      <div className="bg-white p-2 rounded-lg shadow border">
+                        <p className="text-sm">{`${payload[0].name}: ${payload[0].value}%`}</p>
+                      </div>
+                    );
+                  }
+                  return null;
+                }}
+              />
+              <Legend 
+                verticalAlign="bottom"
+                align="center"
+                layout="horizontal"
+              />
+            </PieChart>
+          </ResponsiveContainer>
+        </div>
       </CardContent>
     </Card>
   );
@@ -225,6 +237,9 @@ const AnalyticsPage = () => {
     console.log("Downloading report...");
   };
   
+  // Retrieve transcript from sessionStorage
+  const transcript = JSON.parse(sessionStorage.getItem('currentTranscript') || '[]');
+
   return (
     <div className="flex h-screen bg-white">
       <AttuneSidebar />
@@ -318,9 +333,9 @@ const AnalyticsPage = () => {
               <div className="mt-6">
                 <h3 className="text-lg font-medium text-[hsl(var(--attune-purple))] mb-2">Session Transcript</h3>
                 <div className="max-h-40 overflow-y-auto rounded-xl border border-gray-200 p-3 shadow-inner bg-white">
-                  {getDataByTimeRange().map((item, index) => (
+                  {transcript.map((item, index) => (
                     <div key={index} className="mb-2">
-                      <span className="text-sm">{item.transcript}</span>
+                      <span className="text-sm">{item}</span>
                     </div>
                   ))}
                 </div>

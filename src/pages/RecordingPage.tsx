@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { AttuneSidebar } from "@/components/sidebar/AttuneSidebar";
 import { Button } from "@/components/ui/button";
@@ -97,7 +96,12 @@ const RecordingPage = () => {
     
     const transcriptInterval = setInterval(() => {
       const randomPhrase = phrases[Math.floor(Math.random() * phrases.length)];
-      setTranscript(prev => [...prev, randomPhrase]);
+      setTranscript(prev => {
+        const newTranscript = [...prev, randomPhrase];
+        // Store transcript in sessionStorage
+        sessionStorage.setItem('currentTranscript', JSON.stringify(newTranscript));
+        return newTranscript;
+      });
     }, 3000);
     
     return () => {
