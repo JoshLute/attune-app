@@ -1,6 +1,7 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { Loader2 } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
 
 interface Props {
   isRecording: boolean;
@@ -12,6 +13,7 @@ export const LiveTranscription = ({ isRecording, onTranscriptUpdate }: Props) =>
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
   const [recordingInterval, setRecordingInterval] = useState<NodeJS.Timeout | null>(null);
+  const { toast } = useToast();
   
   // Start recording when the component is mounted and isRecording is true
   useEffect(() => {
@@ -60,6 +62,11 @@ export const LiveTranscription = ({ isRecording, onTranscriptUpdate }: Props) =>
     } catch (error) {
       console.error('Error starting recording:', error);
       setStatus('error');
+      toast({
+        title: "Recording error",
+        description: "Could not access your microphone. Please check your browser permissions.",
+        variant: "destructive"
+      });
     }
   };
 
@@ -89,14 +96,26 @@ export const LiveTranscription = ({ isRecording, onTranscriptUpdate }: Props) =>
       const formData = new FormData();
       formData.append('audio', audioBlob);
       
-      // Send the audio to the Lemonfox Whisper API via Supabase Edge Function
-      const response = await fetch('/api/transcribe', {
+      // Use the complete Supabase Edge Function URL instead of relative path
+      // This URL should be your actual Supabase project URL with the function name
+      const supabaseUrl = process.env.SUPABASE_URL || 'https://your-project.supabase.co';
+      const transcribeUrl = `${supabaseUrl}/functions/v1/transcribe`;
+      
+      console.log('Sending transcription request to:', transcribeUrl);
+      
+      const response = await fetch(transcribeUrl, {
         method: 'POST',
         body: formData,
+        headers: {
+          // No Content-Type header for FormData
+          // It will be set automatically with the correct boundary
+        }
       });
       
       if (!response.ok) {
-        throw new Error('Transcription failed');
+        const errorText = await response.text();
+        console.error(`Transcription error (${response.status}):`, errorText);
+        throw new Error(`Transcription failed: ${response.status} ${errorText}`);
       }
       
       const data = await response.json();
@@ -111,6 +130,11 @@ export const LiveTranscription = ({ isRecording, onTranscriptUpdate }: Props) =>
       setStatus('recording');
     } catch (error) {
       console.error('Error transcribing audio:', error);
+      toast({
+        title: "Transcription failed",
+        description: "Could not transcribe the audio. Please check your Supabase configuration.",
+        variant: "destructive"
+      });
       setStatus('error');
     }
   };
