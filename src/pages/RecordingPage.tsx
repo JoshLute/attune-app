@@ -22,6 +22,7 @@ const RecordingPage = () => {
   const [isSetupDialogOpen, setIsSetupDialogOpen] = useState(true);
   const [setupStep, setSetupStep] = useState<'student' | 'materials' | 'recording'>('student');
   const [selectedStudent, setSelectedStudent] = useState<string | null>(null);
+  const [lessonTitle, setLessonTitle] = useState('');
   const [isRecording, setIsRecording] = useState(false);
   const [understanding, setUnderstanding] = useState(85);
   const [attention, setAttention] = useState(90);
@@ -64,6 +65,8 @@ const RecordingPage = () => {
   const handleStartRecording = () => {
     setIsSetupDialogOpen(false);
     setIsRecording(true);
+    // Store the lesson title in sessionStorage so it persists across pages
+    sessionStorage.setItem('currentLessonTitle', lessonTitle);
     
     // Simulate changing metrics over time
     const understandingInterval = setInterval(() => {
@@ -166,6 +169,8 @@ const RecordingPage = () => {
                 <RecordingSetup 
                   onNext={handleStartRecording}
                   onBack={() => setSetupStep('student')}
+                  onTitleChange={setLessonTitle}
+                  title={lessonTitle}
                 />
               )}
             </DialogContent>
@@ -226,7 +231,6 @@ const RecordingPage = () => {
                       />
                     </div>
                   </div>
-                </div>
                 
                 {/* Transcript */}
                 <div className="bg-[#F1F0FB] p-6 rounded-3xl">

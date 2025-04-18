@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { AttuneSidebar } from '@/components/sidebar/AttuneSidebar';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
@@ -197,6 +196,7 @@ const AISuggestionsSection = () => {
 const AnalyticsPage = () => {
   const [timeRange, setTimeRange] = useState<'today' | 'week' | 'month'>('today');
   const { toast } = useToast();
+  const lessonTitle = sessionStorage.getItem('currentLessonTitle') || 'Lesson Title';
   
   const getDataByTimeRange = () => {
     switch (timeRange) {
@@ -249,7 +249,7 @@ const AnalyticsPage = () => {
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center">
                   <BookOpen className="mr-2 text-[hsl(var(--attune-purple))]" />
-                  <h2 className="text-xl font-semibold text-[hsl(var(--attune-purple))]">Lesson Title</h2>
+                  <h2 className="text-xl font-semibold text-[hsl(var(--attune-purple))]">{lessonTitle}</h2>
                 </div>
                 <div className="flex items-center gap-2">
                   <div className="flex rounded-lg overflow-hidden shadow-[2px_2px_5px_rgba(0,0,0,0.08)]">
