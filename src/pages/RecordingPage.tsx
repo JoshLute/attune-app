@@ -9,6 +9,8 @@ import { Progress } from "@/components/ui/progress";
 import { useNavigate } from "react-router-dom";
 import { RecordingSetup } from "@/components/recording/RecordingSetup";
 import { LiveTranscription } from "@/components/recording/LiveTranscription";
+import { addLiveLogEntry } from "@/services/liveLogService";
+import { useToast } from "@/hooks/use-toast";
 
 type StudentStatus = 'Attentive' | 'Confused' | 'Inattentive';
 
@@ -30,6 +32,8 @@ const RecordingPage = () => {
   const [transcript, setTranscript] = useState<string[]>([]);
   const [recordingTime, setRecordingTime] = useState(0);
   const [activeTag, setActiveTag] = useState<string | null>(null);
+
+  const { toast } = useToast();
 
   // Handle recording timer
   useEffect(() => {
@@ -98,17 +102,51 @@ const RecordingPage = () => {
     navigate("/analytics");
   };
 
-  const handleTranscriptUpdate = (text: string) => {
-    setTranscript(prev => {
-      // Split the transcript by sentences to make it more readable
-      const sentences = text.split(/[.!?]+/).filter(sentence => sentence.trim().length > 0);
-      
-      const newTranscript = [...prev, ...sentences.map(s => s.trim())];
-      // Store transcript in sessionStorage
-      sessionStorage.setItem('currentTranscript', JSON.stringify(newTranscript));
-      return newTranscript;
-    });
+  // Modified handleTranscriptUpdate to store data in Supabase
+  const handleTranscriptUpdate = async (text: string) => {
+    try {
+      await addLiveLogEntry({
+        confusion_level: 100 - understanding, // inverse of understanding
+        attention_level: attention,
+        transcription_text: text,
+      });
+
+      setTranscript(prev => {
+        const sentences = text.split(/[.!?]+/).filter(sentence => sentence.trim().length > 0);
+        const newTranscript = [...prev, ...sentences.map(s => s.trim())];
+        sessionStorage.setItem('currentTranscript', JSON.stringify(newTranscript));
+        return newTranscript;
+      });
+    } catch (error) {
+      toast({
+        title: "Error saving recording data",
+        description: "Failed to save the recording data to the database.",
+        variant: "destructive"
+      });
+      console.error('Error saving live log:', error);
+    }
   };
+
+  // Also log metrics changes
+  useEffect(() => {
+    if (isRecording) {
+      const logMetrics = async () => {
+        try {
+          await addLiveLogEntry({
+            confusion_level: 100 - understanding,
+            attention_level: attention,
+            transcription_text: null,
+          });
+        } catch (error) {
+          console.error('Error logging metrics:', error);
+        }
+      };
+
+      const metricsInterval = setInterval(logMetrics, 5000); // Log every 5 seconds
+
+      return () => clearInterval(metricsInterval);
+    }
+  }, [isRecording, understanding, attention]);
 
   const activeStudent = students.find(s => s.id === selectedStudent);
 
