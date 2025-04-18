@@ -70,6 +70,7 @@ const Index = () => {
             <p className="text-gray-600 text-lg">Meet students where they are. Then help them rise.</p>
           </div>
 
+          {/* Stats Cards */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             <StatsCard icon={UsersRound} label="Total Students" value="24" />
             <StatsCard icon={Brain} label="Avg. Understanding" value="76%" />
@@ -77,6 +78,7 @@ const Index = () => {
             <StatsCard icon={Sparkles} label="Key Moments" value="142" />
           </div>
           
+          {/* Recent Sessions Carousel */}
           <div>
             <h2 className="text-2xl font-semibold text-[hsl(var(--attune-purple))] mb-4">Recent Sessions</h2>
             <Carousel className="w-full">
@@ -97,6 +99,7 @@ const Index = () => {
             </Carousel>
           </div>
 
+          {/* Action Buttons */}
           <div className="flex flex-col md:flex-row gap-6">
             <Link to="/recording" className="flex-1">
               <Button variant="outline" size="lg" className="w-full py-8 text-xl rounded-3xl border-2 bg-gradient-to-br from-white to-[#F1F0FB] shadow-[5px_5px_15px_rgba(0,0,0,0.1),_-5px_-5px_15px_rgba(255,255,255,0.8)] hover:shadow-[2px_2px_5px_rgba(0,0,0,0.08),_-2px_-2px_5px_rgba(255,255,255,0.7)] hover:translate-y-[-2px] transition-all duration-300 hover:bg-gradient-to-br hover:from-[hsl(var(--attune-light-purple))] hover:to-[hsl(var(--attune-purple))] hover:text-white hover:border-[hsl(var(--attune-purple))]">
