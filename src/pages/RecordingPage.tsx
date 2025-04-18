@@ -1,69 +1,67 @@
-
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { AttuneSidebar } from "@/components/sidebar/AttuneSidebar";
 import { Button } from "@/components/ui/button";
 import { StudentRecordingCard } from "@/components/recording/StudentRecordingCard";
-import { useToast } from "@/hooks/use-toast";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
 import { useNavigate } from "react-router-dom";
+import { RecordingSetup } from "@/components/recording/RecordingSetup";
 
 type StudentStatus = 'Attentive' | 'Confused' | 'Inattentive';
 
 interface Student {
   id: string;
   name: string;
-  status: StudentStatus;
   avatarUrl: string;
 }
 
 const RecordingPage = () => {
-  const { toast } = useToast();
   const navigate = useNavigate();
   const [isSetupDialogOpen, setIsSetupDialogOpen] = useState(true);
+  const [setupStep, setSetupStep] = useState<'student' | 'materials' | 'recording'>('student');
   const [selectedStudent, setSelectedStudent] = useState<string | null>(null);
   const [isRecording, setIsRecording] = useState(false);
   const [understanding, setUnderstanding] = useState(85);
   const [attention, setAttention] = useState(90);
   const [transcript, setTranscript] = useState<string[]>([]);
+  const [recordingTime, setRecordingTime] = useState(0);
+  const [activeTag, setActiveTag] = useState<string | null>(null);
+
+  // Handle recording timer
+  useEffect(() => {
+    let timer: NodeJS.Timeout;
+    if (isRecording) {
+      timer = setInterval(() => {
+        setRecordingTime(prev => prev + 1);
+      }, 1000);
+    }
+    return () => {
+      if (timer) clearInterval(timer);
+    };
+  }, [isRecording]);
 
   // Mock students data
   const students = [
     {
       id: "jonathan",
       name: "Jonathan Sum",
-      status: "Attentive" as StudentStatus,
       avatarUrl: "https://api.dicebear.com/7.x/personas/svg?seed=jonathan"
     },
     {
       id: "jp",
       name: "JP Vela",
-      status: "Confused" as StudentStatus,
       avatarUrl: "https://api.dicebear.com/7.x/personas/svg?seed=jp"
     },
     {
       id: "cooper",
       name: "Cooper Randeen",
-      status: "Inattentive" as StudentStatus,
       avatarUrl: "https://api.dicebear.com/7.x/personas/svg?seed=cooper"
     }
   ];
 
-  // Get the selected student's data
-  const activeStudent = students.find(s => s.id === selectedStudent);
-
   const handleStartRecording = () => {
-    if (!selectedStudent) {
-      toast({
-        title: "Selection Required",
-        description: "Please select a student to continue.",
-        variant: "destructive"
-      });
-      return;
-    }
-    
     setIsSetupDialogOpen(false);
     setIsRecording(true);
     
@@ -71,16 +69,14 @@ const RecordingPage = () => {
     const understandingInterval = setInterval(() => {
       setUnderstanding(prev => {
         const change = Math.random() > 0.5 ? 5 : -5;
-        const newValue = prev + change;
-        return Math.max(10, Math.min(100, newValue));
+        return Math.max(10, Math.min(100, prev + change));
       });
     }, 5000);
     
     const attentionInterval = setInterval(() => {
       setAttention(prev => {
         const change = Math.random() > 0.5 ? 8 : -8;
-        const newValue = prev + change;
-        return Math.max(20, Math.min(100, newValue));
+        return Math.max(20, Math.min(100, prev + change));
       });
     }, 4000);
 
@@ -100,7 +96,6 @@ const RecordingPage = () => {
       setTranscript(prev => [...prev, randomPhrase]);
     }, 3000);
     
-    // Clean up intervals when component unmounts
     return () => {
       clearInterval(understandingInterval);
       clearInterval(attentionInterval);
@@ -108,20 +103,15 @@ const RecordingPage = () => {
     };
   };
 
-  const handleBehaviorTag = (studentName: string, tag: string) => {
-    toast({
-      title: "Behavior Tagged",
-      description: `${studentName} marked as "${tag}"`,
-    });
+  const handleBehaviorTag = (tag: string) => {
+    setActiveTag(activeTag === tag ? null : tag);
   };
 
   const handleEndSession = () => {
-    toast({
-      title: "Session Ended",
-      description: "Redirecting to analytics...",
-    });
     navigate("/analytics");
   };
+
+  const activeStudent = students.find(s => s.id === selectedStudent);
 
   return (
     <div className="flex h-screen bg-white">
@@ -132,42 +122,52 @@ const RecordingPage = () => {
           <Dialog open={isSetupDialogOpen} onOpenChange={setIsSetupDialogOpen}>
             <DialogContent className="sm:max-w-md">
               <DialogHeader>
-                <DialogTitle>Start New Recording</DialogTitle>
+                <DialogTitle>
+                  {setupStep === 'student' ? 'Select Student' : 'Upload Materials'}
+                </DialogTitle>
                 <DialogDescription>
-                  Select a student to track during this session.
+                  {setupStep === 'student' 
+                    ? 'Select a student to track during this session.'
+                    : 'Add your curriculum or presentation materials.'
+                  }
                 </DialogDescription>
               </DialogHeader>
               
-              <div className="py-4">
-                <RadioGroup value={selectedStudent || ""} onValueChange={setSelectedStudent}>
-                  {students.map((student) => (
-                    <div key={student.id} className="flex items-center space-x-3 space-y-2">
-                      <RadioGroupItem value={student.id} id={student.id} />
-                      <Label htmlFor={student.id} className="flex items-center gap-2 cursor-pointer">
-                        <div className="w-8 h-8 rounded-full overflow-hidden">
-                          <img 
-                            src={student.avatarUrl} 
-                            alt={student.name} 
-                            className="w-full h-full object-cover"
-                          />
-                        </div>
-                        <span>{student.name}</span>
-                      </Label>
-                    </div>
-                  ))}
-                </RadioGroup>
-              </div>
-              
-              <DialogFooter>
-                <Button 
-                  type="button" 
-                  variant="default"
-                  className="bg-[#9b87f5] hover:bg-[#7E69AB]"
-                  onClick={handleStartRecording}
-                >
-                  Start Recording
-                </Button>
-              </DialogFooter>
+              {setupStep === 'student' ? (
+                <div className="py-4">
+                  <RadioGroup value={selectedStudent || ""} onValueChange={setSelectedStudent}>
+                    {students.map((student) => (
+                      <div key={student.id} className="flex items-center space-x-3 space-y-2">
+                        <RadioGroupItem value={student.id} id={student.id} />
+                        <Label htmlFor={student.id} className="flex items-center gap-2 cursor-pointer">
+                          <div className="w-8 h-8 rounded-full overflow-hidden">
+                            <img 
+                              src={student.avatarUrl} 
+                              alt={student.name} 
+                              className="w-full h-full object-cover"
+                            />
+                          </div>
+                          <span>{student.name}</span>
+                        </Label>
+                      </div>
+                    ))}
+                  </RadioGroup>
+                  <div className="flex justify-end mt-6">
+                    <Button 
+                      disabled={!selectedStudent}
+                      onClick={() => setSetupStep('materials')}
+                      className="bg-[#9b87f5] hover:bg-[#7E69AB]"
+                    >
+                      Continue
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <RecordingSetup 
+                  onNext={handleStartRecording}
+                  onBack={() => setSetupStep('student')}
+                />
+              )}
             </DialogContent>
           </Dialog>
           
@@ -188,11 +188,13 @@ const RecordingPage = () => {
               <div className="space-y-6">
                 {/* Student Card */}
                 <StudentRecordingCard
-                  key={activeStudent.id}
                   name={activeStudent.name}
                   avatarUrl={activeStudent.avatarUrl}
-                  currentStatus={activeStudent.status}
-                  onTagClick={(tag) => handleBehaviorTag(activeStudent.name, tag)}
+                  understanding={understanding}
+                  attention={attention}
+                  recordingTime={recordingTime}
+                  onTagClick={handleBehaviorTag}
+                  activeTag={activeTag}
                 />
                 
                 {/* Live Metrics */}
@@ -205,7 +207,11 @@ const RecordingPage = () => {
                         <span className="font-medium">Understanding</span>
                         <span className="font-medium">{understanding}%</span>
                       </div>
-                      <Progress value={understanding} className="h-3 bg-gray-200" />
+                      <Progress 
+                        value={understanding} 
+                        className="h-3 bg-gray-200"
+                        indicatorColor={understanding < 25 ? '#ef4444' : '#22c55e'} 
+                      />
                     </div>
                     
                     <div>
@@ -213,7 +219,11 @@ const RecordingPage = () => {
                         <span className="font-medium">Attention</span>
                         <span className="font-medium">{attention}%</span>
                       </div>
-                      <Progress value={attention} className="h-3 bg-gray-200" />
+                      <Progress 
+                        value={attention} 
+                        className="h-3 bg-gray-200"
+                        indicatorColor="#3b82f6" 
+                      />
                     </div>
                   </div>
                 </div>

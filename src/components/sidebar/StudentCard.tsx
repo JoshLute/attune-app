@@ -3,28 +3,14 @@ import React, { useState } from 'react';
 import { cn } from "@/lib/utils";
 import { useNavigate } from 'react-router-dom';
 
-type StudentStatus = 'attentive' | 'confused' | 'inattentive';
-
 interface StudentCardProps {
   name: string;
-  status: StudentStatus;
   avatarUrl: string;
   id: string;
+  understanding?: number;
 }
 
-const statusColors = {
-  attentive: "bg-green-500",
-  confused: "bg-red-500",
-  inattentive: "bg-yellow-500"
-};
-
-const statusText = {
-  attentive: "Attentive",
-  confused: "Confused",
-  inattentive: "Inattentive"
-};
-
-export function StudentCard({ name, status, avatarUrl, id }: StudentCardProps) {
+export function StudentCard({ name, avatarUrl, id, understanding = 100 }: StudentCardProps) {
   const [isActive, setIsActive] = useState(false);
   const navigate = useNavigate();
   
@@ -32,11 +18,12 @@ export function StudentCard({ name, status, avatarUrl, id }: StudentCardProps) {
     navigate(`/student/${id}`);
   };
 
+  const isConfused = understanding < 25;
+
   return (
     <div 
       className={cn(
         "bg-[hsl(var(--attune-light-purple))] rounded-xl p-3 mb-3 flex items-center cursor-pointer transition-all duration-200 shadow-[4px_4px_8px_rgba(0,0,0,0.1),_-4px_-4px_8px_rgba(255,255,255,0.5)] hover:shadow-[2px_2px_4px_rgba(0,0,0,0.1),_-2px_-2px_4px_rgba(255,255,255,0.5)] hover:translate-y-[-2px]",
-        // Add a darker background when active or hovered
         isActive && "bg-[hsl(var(--attune-purple))] text-white",
         "hover:bg-[hsl(var(--attune-purple)/0.8)]"
       )}
@@ -53,19 +40,10 @@ export function StudentCard({ name, status, avatarUrl, id }: StudentCardProps) {
           "text-sm font-semibold", 
           isActive ? "text-white" : "text-white"
         )}>{name}</h3>
-        <div className="flex items-center">
-          <span className={cn("h-2 w-2 rounded-full mr-1", statusColors[status])}></span>
-          <span className={cn(
-            "text-xs",
-            status === 'attentive' && "text-green-100",
-            status === 'confused' && "text-red-100",
-            status === 'inattentive' && "text-yellow-100"
-          )}>
-            {statusText[status]}
-          </span>
-        </div>
+        {isConfused && (
+          <span className="text-xs text-red-100">Confused</span>
+        )}
       </div>
     </div>
   );
 }
-
