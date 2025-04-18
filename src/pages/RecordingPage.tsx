@@ -1,12 +1,13 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { AttuneSidebar } from "@/components/sidebar/AttuneSidebar";
 import { Button } from "@/components/ui/button";
 import { StudentRecordingCard } from "@/components/recording/StudentRecordingCard";
 import { useToast } from "@/hooks/use-toast";
 import { recordingService } from "@/services/recordingService";
-import { Mic, MicOff } from "lucide-react";
+import { Mic, MicOff, Volume2, VolumeX } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 
 type StudentStatus = 'Attentive' | 'Confused' | 'Inattentive';
 
@@ -21,7 +22,9 @@ const RecordingPage = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
   const [isRecording, setIsRecording] = useState(false);
+  const [isMuted, setIsMuted] = useState(false);
   const [transcriptText, setTranscriptText] = useState<string>("");
+  const [hasPermission, setHasPermission] = useState<boolean | null>(null);
   const [students] = useState<Student[]>([
     {
       id: "jonathan",
@@ -42,16 +45,26 @@ const RecordingPage = () => {
       avatarUrl: "https://api.dicebear.com/7.x/personas/svg?seed=cooper"
     }
   ]);
+  
+  // Reference to the transcript container for auto-scrolling
+  const transcriptRef = useRef<HTMLDivElement>(null);
 
   // Handle transcription updates
   const handleTranscriptUpdate = (data: any) => {
     setTranscriptText(prev => `${prev}${data.timestamp}: ${data.text}\n`);
+    
+    // Auto-scroll to the bottom of the transcript
+    setTimeout(() => {
+      if (transcriptRef.current) {
+        transcriptRef.current.scrollTop = transcriptRef.current.scrollHeight;
+      }
+    }, 100);
   };
 
   // Handle session end
-  const handleEndSession = () => {
+  const handleEndSession = async () => {
     if (isRecording) {
-      const summary = recordingService.endRecording();
+      const summary = await recordingService.endRecording();
       setIsRecording(false);
       toast({
         title: "Session Ended",
@@ -78,16 +91,51 @@ const RecordingPage = () => {
   };
 
   // Handle start recording
-  const handleStartRecording = () => {
+  const handleStartRecording = async () => {
     if (!isRecording) {
-      recordingService.startRecording();
-      setIsRecording(true);
-      setTranscriptText("");
-      toast({
-        title: "Recording Started",
-        description: "Live transcription is now active",
-      });
+      // Check for microphone permissions
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        stream.getTracks().forEach(track => track.stop()); // Stop the tracks after permission check
+        
+        setHasPermission(true);
+        
+        // Start the actual recording
+        const success = await recordingService.startRecording();
+        if (success) {
+          setIsRecording(true);
+          setTranscriptText("");
+          toast({
+            title: "Recording Started",
+            description: "Live transcription is now active",
+          });
+        } else {
+          toast({
+            variant: "destructive",
+            title: "Recording Failed",
+            description: "Could not start recording. Please try again.",
+          });
+        }
+      } catch (error) {
+        console.error("Microphone access denied:", error);
+        setHasPermission(false);
+        toast({
+          variant: "destructive",
+          title: "Microphone Access Denied",
+          description: "Please allow microphone access to use this feature.",
+        });
+      }
     }
+  };
+  
+  // Toggle mute/unmute
+  const handleToggleMute = () => {
+    // In a real implementation, this would mute the microphone
+    setIsMuted(!isMuted);
+    toast({
+      title: isMuted ? "Microphone Unmuted" : "Microphone Muted",
+      description: isMuted ? "Audio recording resumed" : "Audio recording paused temporarily",
+    });
   };
 
   // Set up and clean up listeners
@@ -95,9 +143,13 @@ const RecordingPage = () => {
     recordingService.addTranscriptListener(handleTranscriptUpdate);
     
     return () => {
+      // Ensure we stop recording if the component unmounts
+      if (isRecording) {
+        recordingService.endRecording();
+      }
       recordingService.removeTranscriptListener(handleTranscriptUpdate);
     };
-  }, []);
+  }, [isRecording]);
 
   return (
     <div className="flex h-screen bg-white">
@@ -107,6 +159,25 @@ const RecordingPage = () => {
           <div className="flex justify-between items-center mb-6">
             <h1 className="text-3xl font-bold text-[hsl(var(--attune-purple))]">In Session</h1>
             <div className="flex space-x-4">
+              {isRecording && (
+                <Button
+                  onClick={handleToggleMute}
+                  variant="outline"
+                  className="flex items-center space-x-2"
+                >
+                  {isMuted ? (
+                    <>
+                      <VolumeX className="h-4 w-4 text-red-500" />
+                      <span>Unmute</span>
+                    </>
+                  ) : (
+                    <>
+                      <Volume2 className="h-4 w-4" />
+                      <span>Mute</span>
+                    </>
+                  )}
+                </Button>
+              )}
               <Button 
                 onClick={handleStartRecording}
                 disabled={isRecording}
@@ -127,10 +198,22 @@ const RecordingPage = () => {
             </div>
           </div>
           
+          {hasPermission === false && (
+            <Alert variant="destructive" className="mb-6">
+              <AlertTitle>Microphone Access Required</AlertTitle>
+              <AlertDescription>
+                To use the recording feature, you must allow microphone access in your browser settings.
+              </AlertDescription>
+            </Alert>
+          )}
+          
           {isRecording && (
             <div className="mb-6 p-4 bg-gray-50 rounded-lg border border-gray-200">
               <h2 className="text-lg font-semibold mb-2">Live Transcript</h2>
-              <div className="bg-white p-3 rounded border max-h-40 overflow-y-auto font-mono text-sm whitespace-pre-line">
+              <div 
+                ref={transcriptRef}
+                className="bg-white p-3 rounded border max-h-40 overflow-y-auto font-mono text-sm whitespace-pre-line"
+              >
                 {transcriptText || "Waiting for transcription..."}
               </div>
             </div>
