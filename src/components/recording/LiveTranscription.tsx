@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useEffect } from 'react';
 import { Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
@@ -8,8 +9,10 @@ interface Props {
   onTranscriptUpdate: (text: string) => void;
 }
 
+type StatusType = 'idle' | 'recording' | 'processing' | 'error';
+
 export const LiveTranscription = ({ isRecording, onTranscriptUpdate }: Props) => {
-  const [status, setStatus<'idle' | 'recording' | 'processing' | 'error'>('idle')] = useState('idle');
+  const [status, setStatus] = useState<StatusType>('idle');
   const [errorMessage, setErrorMessage] = useState<string>('');
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
