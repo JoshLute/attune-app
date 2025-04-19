@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useEffect } from 'react';
 import { Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
@@ -14,6 +15,22 @@ export const LiveTranscription = ({ isRecording, onTranscriptUpdate }: Props) =>
   const audioChunksRef = useRef<Blob[]>([]);
   const [recordingInterval, setRecordingInterval] = useState<NodeJS.Timeout | null>(null);
   const { toast } = useToast();
+  
+  // Check for Supabase configuration on mount
+  useEffect(() => {
+    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+    const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+    
+    if (!supabaseUrl || !supabaseKey) {
+      setStatus('error');
+      setErrorMessage('Supabase configuration missing');
+      toast({
+        title: "Configuration Error",
+        description: "Supabase environment variables are not properly configured. Please check your setup.",
+        variant: "destructive"
+      });
+    }
+  }, [toast]);
   
   // Start recording when the component is mounted and isRecording is true
   useEffect(() => {
