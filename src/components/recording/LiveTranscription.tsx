@@ -18,8 +18,14 @@ export const LiveTranscription = ({ isRecording, onTranscriptUpdate }: Props) =>
   
   // Check for Supabase configuration on mount
   useEffect(() => {
+    // Debug what environment variables are available
+    console.log('Available Vite env vars:', Object.keys(import.meta.env).filter(key => key.startsWith('VITE_')));
+    
     const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
     const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+    
+    console.log('VITE_SUPABASE_URL in LiveTranscription:', supabaseUrl || 'not set');
+    console.log('VITE_SUPABASE_ANON_KEY in LiveTranscription configured:', !!supabaseKey);
     
     if (!supabaseUrl || !supabaseKey) {
       setStatus('error');
@@ -118,8 +124,10 @@ export const LiveTranscription = ({ isRecording, onTranscriptUpdate }: Props) =>
       // Get the Supabase URL from environment variables
       const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
       
+      // Add more explicit error handling
       if (!supabaseUrl) {
-        throw new Error("VITE_SUPABASE_URL environment variable is not set. Please check your Supabase configuration.");
+        console.error('VITE_SUPABASE_URL is missing');
+        throw new Error("Supabase URL is not configured. Please check your environment variables.");
       }
       
       const transcribeUrl = `${supabaseUrl}/functions/v1/transcribe`;
