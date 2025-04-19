@@ -1,7 +1,7 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import { Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { supabase } from "@/integrations/supabase/client";
 
 interface Props {
   isRecording: boolean;
@@ -9,7 +9,7 @@ interface Props {
 }
 
 export const LiveTranscription = ({ isRecording, onTranscriptUpdate }: Props) => {
-  const [status, setStatus] = useState<'idle' | 'recording' | 'processing' | 'error'>('idle');
+  const [status, setStatus<'idle' | 'recording' | 'processing' | 'error'>('idle')] = useState('idle');
   const [errorMessage, setErrorMessage] = useState<string>('');
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
@@ -122,18 +122,8 @@ export const LiveTranscription = ({ isRecording, onTranscriptUpdate }: Props) =>
       const formData = new FormData();
       formData.append('audio', audioBlob);
       
-      // Get the Supabase URL from environment variables with safeguards
-      const supabaseUrl = import.meta.env?.VITE_SUPABASE_URL || '';
-      
-      // Add more explicit error handling
-      if (!supabaseUrl) {
-        console.error('VITE_SUPABASE_URL is missing');
-        setStatus('error');
-        setErrorMessage('Supabase URL not configured');
-        throw new Error("Supabase URL is not configured. Please check your environment variables.");
-      }
-      
-      const transcribeUrl = `${supabaseUrl}/functions/v1/transcribe`;
+      // Use the Supabase URL directly from the client configuration
+      const transcribeUrl = `${supabase.supabaseUrl}/functions/v1/transcribe`;
       console.log('Sending transcription request to:', transcribeUrl);
       console.log('Audio blob size:', audioBlob.size, 'bytes');
       

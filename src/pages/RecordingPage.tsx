@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from 'react';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { ChevronUp, ChevronDown } from "lucide-react";
 import { AttuneSidebar } from "@/components/sidebar/AttuneSidebar";
 import { Button } from "@/components/ui/button";
 import { StudentRecordingCard } from "@/components/recording/StudentRecordingCard";
@@ -32,6 +34,7 @@ const RecordingPage = () => {
   const [transcript, setTranscript] = useState<string[]>([]);
   const [recordingTime, setRecordingTime] = useState(0);
   const [activeTag, setActiveTag] = useState<string | null>(null);
+  const [isTranscriptOpen, setIsTranscriptOpen] = useState(true);
 
   const { toast } = useToast();
 
@@ -268,26 +271,43 @@ const RecordingPage = () => {
                 </div>
                 
                 {/* Transcript */}
-                <div className="bg-[#F1F0FB] p-6 rounded-3xl">
-                  <h3 className="text-xl font-semibold text-[hsl(var(--attune-purple))] mb-4">Live Transcript</h3>
-                  <div className="bg-white p-4 rounded-xl max-h-60 overflow-y-auto shadow-inner relative">
-                    {transcript.length > 0 ? (
-                      transcript.map((text, index) => (
-                        <p key={index} className="py-1 border-b border-gray-100 last:border-none">
-                          {text}
-                        </p>
-                      ))
-                    ) : (
-                      <p className="text-gray-500 italic">Waiting for speech...</p>
-                    )}
-                    
-                    {/* Live transcription status indicator */}
-                    <LiveTranscription 
-                      isRecording={isRecording} 
-                      onTranscriptUpdate={handleTranscriptUpdate} 
-                    />
+                <Collapsible
+                  open={isTranscriptOpen}
+                  onOpenChange={setIsTranscriptOpen}
+                  className="bg-[#F1F0FB] p-6 rounded-3xl"
+                >
+                  <div className="flex justify-between items-center mb-4">
+                    <h3 className="text-xl font-semibold text-[hsl(var(--attune-purple))]">
+                      Live Transcript
+                    </h3>
+                    <CollapsibleTrigger className="p-2 hover:bg-gray-100 rounded-full transition-colors">
+                      {isTranscriptOpen ? (
+                        <ChevronUp className="h-4 w-4" />
+                      ) : (
+                        <ChevronDown className="h-4 w-4" />
+                      )}
+                    </CollapsibleTrigger>
                   </div>
-                </div>
+                  <CollapsibleContent>
+                    <div className="bg-white p-4 rounded-xl max-h-60 overflow-y-auto shadow-inner relative">
+                      {transcript.length > 0 ? (
+                        transcript.map((text, index) => (
+                          <p key={index} className="py-1 border-b border-gray-100 last:border-none">
+                            {text}
+                          </p>
+                        ))
+                      ) : (
+                        <p className="text-gray-500 italic">Waiting for speech...</p>
+                      )}
+                      
+                      {/* Live transcription status indicator */}
+                      <LiveTranscription 
+                        isRecording={isRecording} 
+                        onTranscriptUpdate={handleTranscriptUpdate} 
+                      />
+                    </div>
+                  </CollapsibleContent>
+                </Collapsible>
               </div>
             </>
           )}
