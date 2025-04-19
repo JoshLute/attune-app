@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import { Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
@@ -107,36 +106,29 @@ export const LiveTranscription = ({ isRecording, onTranscriptUpdate }: Props) =>
       }
       
       const transcribeUrl = `${supabaseUrl}/functions/v1/transcribe`;
-      
       console.log('Sending transcription request to:', transcribeUrl);
       console.log('Audio blob size:', audioBlob.size, 'bytes');
       
-      // Add extra debugging for fetch request
-      try {
-        const response = await fetch(transcribeUrl, {
-          method: 'POST',
-          body: formData,
-        });
-        
-        console.log('Response status:', response.status);
-        
-        if (!response.ok) {
-          const errorText = await response.text();
-          console.error(`Transcription error (${response.status}):`, errorText);
-          throw new Error(`Transcription failed: ${response.status} ${errorText || 'Unknown error'}`);
-        }
-        
-        const data = await response.json();
-        console.log('Transcription response:', data);
-        
-        if (data.text) {
-          onTranscriptUpdate(data.text);
-        } else {
-          console.warn('No text in transcription response:', data);
-        }
-      } catch (fetchError) {
-        console.error('Fetch error:', fetchError);
-        throw new Error(`Network error: ${fetchError.message || 'Failed to connect to transcription service'}`);
+      const response = await fetch(transcribeUrl, {
+        method: 'POST',
+        body: formData,
+      });
+      
+      console.log('Response status:', response.status);
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error(`Transcription error (${response.status}):`, errorText);
+        throw new Error(`Transcription failed: ${response.status} ${errorText || 'Unknown error'}`);
+      }
+      
+      const data = await response.json();
+      console.log('Transcription response:', data);
+      
+      if (data.text) {
+        onTranscriptUpdate(data.text);
+      } else {
+        console.warn('No text in transcription response:', data);
       }
       
       // Clear the audio chunks for the next recording
@@ -149,7 +141,7 @@ export const LiveTranscription = ({ isRecording, onTranscriptUpdate }: Props) =>
       setErrorMessage(error.message || 'Unknown error');
       toast({
         title: "Transcription failed",
-        description: error.message || "Could not transcribe the audio. Please check your Supabase configuration.",
+        description: error.message || "Could not transcribe the audio. Please try again.",
         variant: "destructive"
       });
     }
