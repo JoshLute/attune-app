@@ -6,8 +6,8 @@ import { LiveLogEntry } from '@/types/liveLog';
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
 const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
 
-console.log('Supabase URL configured:', !!supabaseUrl);
-console.log('Supabase Anon Key configured:', !!supabaseKey);
+console.log('VITE_SUPABASE_URL value:', supabaseUrl);
+console.log('VITE_SUPABASE_ANON_KEY configured:', !!supabaseKey);
 
 if (!supabaseUrl || !supabaseKey) {
   console.warn('Supabase environment variables not properly configured');
@@ -17,6 +17,7 @@ const supabase = createClient(supabaseUrl, supabaseKey);
 
 export const addLiveLogEntry = async (entry: Omit<LiveLogEntry, 'time'>) => {
   try {
+    console.log('Attempting to add live log entry to Supabase');
     const { data, error } = await supabase
       .from('live_log')
       .insert([
@@ -33,6 +34,7 @@ export const addLiveLogEntry = async (entry: Omit<LiveLogEntry, 'time'>) => {
       throw error;
     }
 
+    console.log('Successfully added live log entry');
     return data;
   } catch (error) {
     console.error('Failed to log entry:', error);
