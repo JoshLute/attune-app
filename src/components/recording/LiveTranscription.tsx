@@ -102,7 +102,7 @@ export const LiveTranscription = ({ isRecording, onTranscriptUpdate }: Props) =>
       const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
       
       if (!supabaseUrl) {
-        throw new Error("VITE_SUPABASE_URL environment variable is not set");
+        throw new Error("VITE_SUPABASE_URL environment variable is not set. Please check your Supabase configuration.");
       }
       
       const transcribeUrl = `${supabaseUrl}/functions/v1/transcribe`;
@@ -119,7 +119,18 @@ export const LiveTranscription = ({ isRecording, onTranscriptUpdate }: Props) =>
       if (!response.ok) {
         const errorText = await response.text();
         console.error(`Transcription error (${response.status}):`, errorText);
-        throw new Error(`Transcription failed: ${response.status} ${errorText || 'Unknown error'}`);
+        
+        // More specific error handling based on status
+        switch (response.status) {
+          case 401:
+            throw new Error("Unauthorized. Check your Supabase and API configurations.");
+          case 429:
+            throw new Error("Too many requests. Please try again later.");
+          case 500:
+            throw new Error("Server error. The transcription service might be temporarily unavailable.");
+          default:
+            throw new Error(`Transcription failed: ${response.status} ${errorText || 'Unknown error'}`);
+        }
       }
       
       const data = await response.json();
@@ -129,6 +140,12 @@ export const LiveTranscription = ({ isRecording, onTranscriptUpdate }: Props) =>
         onTranscriptUpdate(data.text);
       } else {
         console.warn('No text in transcription response:', data);
+        // Optional: Show a toast if no text is returned
+        toast({
+          title: "Transcription Incomplete",
+          description: "No text was transcribed. The audio might be too short or unclear.",
+          variant: "default"
+        });
       }
       
       // Clear the audio chunks for the next recording
@@ -139,9 +156,11 @@ export const LiveTranscription = ({ isRecording, onTranscriptUpdate }: Props) =>
       console.error('Error transcribing audio:', error);
       setStatus('error');
       setErrorMessage(error.message || 'Unknown error');
+      
+      // More detailed toast messages for different error scenarios
       toast({
-        title: "Transcription failed",
-        description: error.message || "Could not transcribe the audio. Please try again.",
+        title: "Transcription Error",
+        description: error.message || "Could not transcribe the audio. Please check your configuration and try again.",
         variant: "destructive"
       });
     }
