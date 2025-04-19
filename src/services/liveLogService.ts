@@ -3,39 +3,37 @@ import { createClient } from '@supabase/supabase-js';
 import { LiveLogEntry } from '@/types/liveLog';
 import { toast } from '@/hooks/use-toast';
 
-// Get environment variables - use explicit window.process access
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+// Initialize with default empty values
+let supabaseUrl = '';
+let supabaseKey = '';
 
-// Debug logs to check what we're receiving
-console.log('VITE_SUPABASE_URL value:', supabaseUrl || 'not set');
-console.log('VITE_SUPABASE_ANON_KEY configured:', !!supabaseKey);
-console.log('Environment variables loaded:', Object.keys(import.meta.env).filter(key => key.startsWith('VITE_')));
+// Try to get environment variables with safeguards
+try {
+  supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
+  supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
+  
+  console.log('Environment variables loaded:', Object.keys(import.meta.env).filter(key => key.startsWith('VITE_')));
+  console.log('VITE_SUPABASE_URL value:', supabaseUrl || 'not set');
+  console.log('VITE_SUPABASE_ANON_KEY configured:', !!supabaseKey);
+} catch (error) {
+  console.error('Error accessing environment variables:', error);
+}
 
 // Initialize supabase client with additional safeguards
 let supabase = null;
 
 try {
-  // Added more explicit checks
-  if (!supabaseUrl) {
-    throw new Error('VITE_SUPABASE_URL is missing');
+  // Only create client if we have valid values
+  if (supabaseUrl && supabaseUrl.trim() !== '' && 
+      supabaseKey && supabaseKey.trim() !== '') {
+    console.log('Creating Supabase client with URL:', supabaseUrl);
+    supabase = createClient(supabaseUrl, supabaseKey);
+    console.log('Supabase client initialized successfully');
+  } else {
+    console.error('Supabase initialization failed: Missing required configuration');
+    console.error('URL defined:', !!supabaseUrl);
+    console.error('Key defined:', !!supabaseKey);
   }
-  
-  if (typeof supabaseUrl !== 'string' || supabaseUrl.trim() === '') {
-    throw new Error('VITE_SUPABASE_URL is empty or invalid');
-  }
-  
-  if (!supabaseKey) {
-    throw new Error('VITE_SUPABASE_ANON_KEY is missing');
-  }
-  
-  if (typeof supabaseKey !== 'string' || supabaseKey.trim() === '') {
-    throw new Error('VITE_SUPABASE_ANON_KEY is empty or invalid');
-  }
-  
-  console.log('Creating Supabase client with URL:', supabaseUrl);
-  supabase = createClient(supabaseUrl, supabaseKey);
-  console.log('Supabase client initialized successfully');
 } catch (error) {
   console.error('Failed to initialize Supabase client:', error.message);
 }

@@ -21,8 +21,9 @@ export const LiveTranscription = ({ isRecording, onTranscriptUpdate }: Props) =>
     // Debug what environment variables are available
     console.log('Available Vite env vars:', Object.keys(import.meta.env).filter(key => key.startsWith('VITE_')));
     
-    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-    const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+    // Use optional chaining and nullish coalescing to avoid errors
+    const supabaseUrl = import.meta.env?.VITE_SUPABASE_URL || '';
+    const supabaseKey = import.meta.env?.VITE_SUPABASE_ANON_KEY || '';
     
     console.log('VITE_SUPABASE_URL in LiveTranscription:', supabaseUrl || 'not set');
     console.log('VITE_SUPABASE_ANON_KEY in LiveTranscription configured:', !!supabaseKey);
@@ -121,12 +122,14 @@ export const LiveTranscription = ({ isRecording, onTranscriptUpdate }: Props) =>
       const formData = new FormData();
       formData.append('audio', audioBlob);
       
-      // Get the Supabase URL from environment variables
-      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      // Get the Supabase URL from environment variables with safeguards
+      const supabaseUrl = import.meta.env?.VITE_SUPABASE_URL || '';
       
       // Add more explicit error handling
       if (!supabaseUrl) {
         console.error('VITE_SUPABASE_URL is missing');
+        setStatus('error');
+        setErrorMessage('Supabase URL not configured');
         throw new Error("Supabase URL is not configured. Please check your environment variables.");
       }
       
