@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { AttuneSidebar } from "@/components/sidebar/AttuneSidebar";
 import { Button } from "@/components/ui/button";
@@ -9,7 +8,6 @@ import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
 import { useNavigate } from "react-router-dom";
 import { RecordingSetup } from "@/components/recording/RecordingSetup";
-import { TranscriptSection } from "@/components/recording/TranscriptSection";
 
 type StudentStatus = 'Attentive' | 'Confused' | 'Inattentive';
 
@@ -85,19 +83,32 @@ const RecordingPage = () => {
       });
     }, 4000);
 
+    // Simulate transcript generation
+    const phrases = [
+      "I think I understand this concept now.",
+      "Could you explain that part again?",
+      "This makes a lot more sense than before.",
+      "I'm having trouble with this section.",
+      "Oh, I see how that works now!",
+      "Wait, how does this relate to what we learned last week?",
+      "That's an interesting approach to solving the problem."
+    ];
+    
+    const transcriptInterval = setInterval(() => {
+      const randomPhrase = phrases[Math.floor(Math.random() * phrases.length)];
+      setTranscript(prev => {
+        const newTranscript = [...prev, randomPhrase];
+        // Store transcript in sessionStorage
+        sessionStorage.setItem('currentTranscript', JSON.stringify(newTranscript));
+        return newTranscript;
+      });
+    }, 3000);
+    
     return () => {
       clearInterval(understandingInterval);
       clearInterval(attentionInterval);
+      clearInterval(transcriptInterval);
     };
-  };
-
-  const handleTranscriptionUpdate = (text: string) => {
-    setTranscript(prev => {
-      const newTranscript = [...prev, text];
-      // Store transcript in sessionStorage
-      sessionStorage.setItem('currentTranscript', JSON.stringify(newTranscript));
-      return newTranscript;
-    });
   };
 
   const handleBehaviorTag = (tag: string) => {
@@ -105,8 +116,6 @@ const RecordingPage = () => {
   };
 
   const handleEndSession = () => {
-    // Stop recording when ending the session
-    setIsRecording(false);
     navigate("/analytics");
   };
 
@@ -230,12 +239,20 @@ const RecordingPage = () => {
                 </div>
                 
                 {/* Transcript */}
-                <TranscriptSection
-                  transcript={transcript}
-                  isRecording={isRecording}
-                  onTranscriptionUpdate={handleTranscriptionUpdate}
-                  onStopRecording={() => setIsRecording(false)}
-                />
+                <div className="bg-[#F1F0FB] p-6 rounded-3xl">
+                  <h3 className="text-xl font-semibold text-[hsl(var(--attune-purple))] mb-4">Live Transcript</h3>
+                  <div className="bg-white p-4 rounded-xl max-h-60 overflow-y-auto shadow-inner">
+                    {transcript.length > 0 ? (
+                      transcript.map((text, index) => (
+                        <p key={index} className="py-1 border-b border-gray-100 last:border-none">
+                          {text}
+                        </p>
+                      ))
+                    ) : (
+                      <p className="text-gray-500 italic">Waiting for speech...</p>
+                    )}
+                  </div>
+                </div>
               </div>
             </>
           )}
