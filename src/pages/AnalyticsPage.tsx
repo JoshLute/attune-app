@@ -120,10 +120,14 @@ const LessonOutlineCard = ({ item }: { item: typeof lessonOutline[0] }) => {
 };
 
 const UnderstandingSummary = () => {
-  // Calculate understanding percentage from mock data
   const totalSegments = lessonOutline.length;
   const attentiveSegments = lessonOutline.filter(segment => segment.status === 'attentive').length;
   const understandingPercentage = Math.round((attentiveSegments / totalSegments) * 100);
+  
+  // Calculate attention percentage based on attentive and inattentive segments
+  const attentionPercentage = Math.round(
+    (lessonOutline.filter(segment => segment.status !== 'inattentive').length / totalSegments) * 100
+  );
   
   return (
     <Card className="rounded-2xl overflow-hidden shadow-[5px_5px_15px_rgba(0,0,0,0.05),_-5px_-5px_15px_rgba(255,255,255,0.8)] border border-purple-100">
@@ -131,53 +135,31 @@ const UnderstandingSummary = () => {
         <CardTitle className="text-xl">Summary</CardTitle>
         <CardDescription className="text-white text-opacity-80">4 Minutes 22 Seconds</CardDescription>
       </CardHeader>
-      <CardContent className="pt-4">
-        <div className="flex justify-between items-center mb-2">
-          <span className="text-lg text-gray-600">Understanding</span>
-          <span className="text-2xl font-bold text-[hsl(var(--attune-purple))]">{understandingPercentage}%</span>
+      <CardContent className="pt-4 space-y-6">
+        <div>
+          <div className="flex justify-between items-center mb-2">
+            <span className="text-lg text-gray-600">Understanding</span>
+            <span className="text-2xl font-bold text-[hsl(var(--attune-purple))]">{understandingPercentage}%</span>
+          </div>
+          <div className="relative h-4 bg-gray-200 rounded-full overflow-hidden">
+            <div 
+              className="absolute top-0 left-0 h-full bg-green-500 transition-all duration-1000"
+              style={{ width: `${understandingPercentage}%` }}
+            ></div>
+          </div>
         </div>
-        <div className="relative h-4 bg-gray-200 rounded-full overflow-hidden mb-4">
-          <div 
-            className="absolute top-0 left-0 h-full bg-green-500" 
-            style={{ width: `${understandingPercentage}%` }}
-          ></div>
-        </div>
-        
-        <div className="h-[200px] w-full mb-4">
-          <ResponsiveContainer width="100%" height="100%">
-            <PieChart>
-              <Pie
-                data={summaryData}
-                cx="50%"
-                cy="50%"
-                innerRadius={60}
-                outerRadius={80}
-                paddingAngle={5}
-                dataKey="value"
-              >
-                {summaryData.map((entry, index) => (
-                  <Cell key={`cell-${index}`} fill={entry.color} />
-                ))}
-              </Pie>
-              <Tooltip
-                content={({ active, payload }) => {
-                  if (active && payload && payload.length) {
-                    return (
-                      <div className="bg-white p-2 rounded-lg shadow border">
-                        <p className="text-sm">{`${payload[0].name}: ${payload[0].value}%`}</p>
-                      </div>
-                    );
-                  }
-                  return null;
-                }}
-              />
-              <Legend 
-                verticalAlign="bottom"
-                align="center"
-                layout="horizontal"
-              />
-            </PieChart>
-          </ResponsiveContainer>
+
+        <div>
+          <div className="flex justify-between items-center mb-2">
+            <span className="text-lg text-gray-600">Attention</span>
+            <span className="text-2xl font-bold text-[hsl(var(--attune-purple))]">{attentionPercentage}%</span>
+          </div>
+          <div className="relative h-4 bg-gray-200 rounded-full overflow-hidden">
+            <div 
+              className="absolute top-0 left-0 h-full bg-blue-500 transition-all duration-1000"
+              style={{ width: `${attentionPercentage}%` }}
+            ></div>
+          </div>
         </div>
       </CardContent>
     </Card>

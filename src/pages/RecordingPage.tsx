@@ -102,6 +102,8 @@ const RecordingPage = () => {
   };
 
   const handleEndSession = () => {
+    setIsRecording(false); // Stop recording before navigating
+    sessionStorage.setItem('currentTranscript', JSON.stringify(transcript));
     navigate("/analytics");
   };
 
