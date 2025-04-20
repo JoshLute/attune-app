@@ -125,8 +125,8 @@ export const LiveTranscription = ({ isRecording, onTranscriptUpdate }: Props) =>
       const formData = new FormData();
       formData.append('audio', audioBlob);
       
-      // Use the Supabase URL directly from the client configuration
-      const transcribeUrl = `${supabase.supabaseUrl}/functions/v1/transcribe`;
+      // Fix: Use the hardcoded Supabase URL from client.ts instead of accessing protected property
+      const transcribeUrl = "https://objlnvvnifkotxctblgd.supabase.co/functions/v1/transcribe";
       console.log('Sending transcription request to:', transcribeUrl);
       console.log('Audio blob size:', audioBlob.size, 'bytes');
       
