@@ -1,6 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { ChevronUp, ChevronDown } from "lucide-react";
 import { AttuneSidebar } from "@/components/sidebar/AttuneSidebar";
 import { Button } from "@/components/ui/button";
 import { StudentRecordingCard } from "@/components/recording/StudentRecordingCard";
@@ -10,9 +8,6 @@ import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
 import { useNavigate } from "react-router-dom";
 import { RecordingSetup } from "@/components/recording/RecordingSetup";
-import { LiveTranscription } from "@/components/recording/LiveTranscription";
-import { addLiveLogEntry } from "@/services/liveLogService";
-import { useToast } from "@/hooks/use-toast";
 
 type StudentStatus = 'Attentive' | 'Confused' | 'Inattentive';
 
@@ -34,9 +29,6 @@ const RecordingPage = () => {
   const [transcript, setTranscript] = useState<string[]>([]);
   const [recordingTime, setRecordingTime] = useState(0);
   const [activeTag, setActiveTag] = useState<string | null>(null);
-  const [isTranscriptOpen, setIsTranscriptOpen] = useState(true);
-
-  const { toast } = useToast();
 
   // Handle recording timer
   useEffect(() => {
@@ -91,9 +83,31 @@ const RecordingPage = () => {
       });
     }, 4000);
 
+    // Simulate transcript generation
+    const phrases = [
+      "I think I understand this concept now.",
+      "Could you explain that part again?",
+      "This makes a lot more sense than before.",
+      "I'm having trouble with this section.",
+      "Oh, I see how that works now!",
+      "Wait, how does this relate to what we learned last week?",
+      "That's an interesting approach to solving the problem."
+    ];
+    
+    const transcriptInterval = setInterval(() => {
+      const randomPhrase = phrases[Math.floor(Math.random() * phrases.length)];
+      setTranscript(prev => {
+        const newTranscript = [...prev, randomPhrase];
+        // Store transcript in sessionStorage
+        sessionStorage.setItem('currentTranscript', JSON.stringify(newTranscript));
+        return newTranscript;
+      });
+    }, 3000);
+    
     return () => {
       clearInterval(understandingInterval);
       clearInterval(attentionInterval);
+      clearInterval(transcriptInterval);
     };
   };
 
@@ -102,56 +116,8 @@ const RecordingPage = () => {
   };
 
   const handleEndSession = () => {
-    setIsRecording(false); // Stop recording before navigating
-    sessionStorage.setItem('currentTranscript', JSON.stringify(transcript));
     navigate("/analytics");
   };
-
-  // Modified handleTranscriptUpdate to store data in Supabase
-  const handleTranscriptUpdate = async (text: string) => {
-    try {
-      await addLiveLogEntry({
-        confusion_level: 100 - understanding, // inverse of understanding
-        attention_level: attention,
-        transcription_text: text,
-      });
-
-      setTranscript(prev => {
-        const sentences = text.split(/[.!?]+/).filter(sentence => sentence.trim().length > 0);
-        const newTranscript = [...prev, ...sentences.map(s => s.trim())];
-        sessionStorage.setItem('currentTranscript', JSON.stringify(newTranscript));
-        return newTranscript;
-      });
-    } catch (error) {
-      toast({
-        title: "Error saving recording data",
-        description: "Failed to save the recording data to the database.",
-        variant: "destructive"
-      });
-      console.error('Error saving live log:', error);
-    }
-  };
-
-  // Also log metrics changes
-  useEffect(() => {
-    if (isRecording) {
-      const logMetrics = async () => {
-        try {
-          await addLiveLogEntry({
-            confusion_level: 100 - understanding,
-            attention_level: attention,
-            transcription_text: null,
-          });
-        } catch (error) {
-          console.error('Error logging metrics:', error);
-        }
-      };
-
-      const metricsInterval = setInterval(logMetrics, 5000); // Log every 5 seconds
-
-      return () => clearInterval(metricsInterval);
-    }
-  }, [isRecording, understanding, attention]);
 
   const activeStudent = students.find(s => s.id === selectedStudent);
 
@@ -273,43 +239,20 @@ const RecordingPage = () => {
                 </div>
                 
                 {/* Transcript */}
-                <Collapsible
-                  open={isTranscriptOpen}
-                  onOpenChange={setIsTranscriptOpen}
-                  className="bg-[#F1F0FB] p-6 rounded-3xl"
-                >
-                  <div className="flex justify-between items-center mb-4">
-                    <h3 className="text-xl font-semibold text-[hsl(var(--attune-purple))]">
-                      Live Transcript
-                    </h3>
-                    <CollapsibleTrigger className="p-2 hover:bg-gray-100 rounded-full transition-colors">
-                      {isTranscriptOpen ? (
-                        <ChevronUp className="h-4 w-4" />
-                      ) : (
-                        <ChevronDown className="h-4 w-4" />
-                      )}
-                    </CollapsibleTrigger>
+                <div className="bg-[#F1F0FB] p-6 rounded-3xl">
+                  <h3 className="text-xl font-semibold text-[hsl(var(--attune-purple))] mb-4">Live Transcript</h3>
+                  <div className="bg-white p-4 rounded-xl max-h-60 overflow-y-auto shadow-inner">
+                    {transcript.length > 0 ? (
+                      transcript.map((text, index) => (
+                        <p key={index} className="py-1 border-b border-gray-100 last:border-none">
+                          {text}
+                        </p>
+                      ))
+                    ) : (
+                      <p className="text-gray-500 italic">Waiting for speech...</p>
+                    )}
                   </div>
-                  <CollapsibleContent>
-                    <div className="bg-white p-4 rounded-xl max-h-60 overflow-y-auto shadow-inner relative">
-                      {transcript.length > 0 ? (
-                        transcript.map((text, index) => (
-                          <p key={index} className="py-1 border-b border-gray-100 last:border-none">
-                            {text}
-                          </p>
-                        ))
-                      ) : (
-                        <p className="text-gray-500 italic">Waiting for speech...</p>
-                      )}
-                      
-                      {/* Live transcription status indicator */}
-                      <LiveTranscription 
-                        isRecording={isRecording} 
-                        onTranscriptUpdate={handleTranscriptUpdate} 
-                      />
-                    </div>
-                  </CollapsibleContent>
-                </Collapsible>
+                </div>
               </div>
             </>
           )}
