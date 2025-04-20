@@ -1,0 +1,37 @@
+
+# This file is used to configure the Supabase project
+
+# Reference ID of the Supabase project
+project_id = "objlnvvnifkotxctblgd"
+
+[api]
+# Port to use for the API URL
+port = 54321
+# Enable JWT verification for the API
+jwt_secret = "super-secret-jwt-token-with-at-least-32-characters-long"
+# Enable debugging mode
+debug = true
+
+[db]
+# Port to use for the database URL
+port = 54322
+
+[studio]
+# Port to use for the Studio URL
+port = 54323
+
+[storage]
+# Enable debugging mode
+debug = false
+
+[auth]
+# Enable debugging mode
+debug = false
+
+[functions]
+# Function specific configurations
+[functions.transcribe]
+verify_jwt = false
+
+[functions.generate-insights]
+verify_jwt = false

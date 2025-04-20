@@ -3,6 +3,8 @@ import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Bot, Send } from 'lucide-react';
+import { aiService } from '@/services/aiService';
+import { useToast } from '@/hooks/use-toast';
 
 interface Message {
   id: string;
@@ -12,6 +14,7 @@ interface Message {
 }
 
 export const AIChat = () => {
+  const { toast } = useToast();
   const [message, setMessage] = useState('');
   const [messages, setMessages] = useState<Message[]>([
     {
@@ -21,9 +24,10 @@ export const AIChat = () => {
       timestamp: new Date()
     }
   ]);
+  const [isLoading, setIsLoading] = useState(false);
 
-  const handleSendMessage = () => {
-    if (!message.trim()) return;
+  const handleSendMessage = async () => {
+    if (!message.trim() || isLoading) return;
 
     // Add user message
     const userMessage: Message = {
@@ -35,17 +39,45 @@ export const AIChat = () => {
 
     setMessages([...messages, userMessage]);
     setMessage('');
+    setIsLoading(true);
 
-    // Simulate AI response (in a real app, this would be an API call)
-    setTimeout(() => {
+    try {
+      // Sample student data to provide context to the AI
+      // In a real app, this would come from your state or database
+      const mockStudentData = {
+        name: "Student",
+        understanding: 68,
+        attention: 75,
+        recentPerformance: "improving",
+        topics: ["fractions", "decimals", "percentages"]
+      };
+
+      // Call Gemini API via our edge function
+      const response = await aiService.generateInsights({
+        type: "chat",
+        context: message,
+        data: mockStudentData
+      });
+
+      // Add AI response
       const aiMessage: Message = {
         id: (Date.now() + 1).toString(),
-        content: "Based on recent data, I notice a positive trend in engagement during morning sessions. Would you like me to analyze this pattern further?",
+        content: response.response || "I'm sorry, I couldn't generate a response. Please try again.",
         isAI: true,
         timestamp: new Date()
       };
+
       setMessages(prev => [...prev, aiMessage]);
-    }, 1000);
+    } catch (error) {
+      console.error("Error in AI chat:", error);
+      toast({
+        title: "Error",
+        description: "Failed to get AI response. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -74,6 +106,21 @@ export const AIChat = () => {
               </div>
             </div>
           ))}
+          {isLoading && (
+            <div className="flex justify-start">
+              <div className="rounded-xl p-4 bg-gradient-to-r from-[hsl(var(--attune-light-purple))] to-white">
+                <div className="flex items-center">
+                  <Bot className="h-4 w-4 mr-2" />
+                  <span className="font-medium">AI Assistant</span>
+                </div>
+                <div className="flex space-x-1 mt-2">
+                  <div className="w-2 h-2 rounded-full bg-[hsl(var(--attune-purple))] animate-bounce" style={{ animationDelay: "0ms" }}></div>
+                  <div className="w-2 h-2 rounded-full bg-[hsl(var(--attune-purple))] animate-bounce" style={{ animationDelay: "150ms" }}></div>
+                  <div className="w-2 h-2 rounded-full bg-[hsl(var(--attune-purple))] animate-bounce" style={{ animationDelay: "300ms" }}></div>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
 
         <div className="flex gap-2">
@@ -82,8 +129,19 @@ export const AIChat = () => {
             onChange={(e) => setMessage(e.target.value)}
             placeholder="Ask about student trends, behavior patterns, or suggestions..."
             className="min-h-[60px]"
+            disabled={isLoading}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                handleSendMessage();
+              }
+            }}
           />
-          <Button onClick={handleSendMessage} className="px-4">
+          <Button 
+            onClick={handleSendMessage} 
+            className="px-4"
+            disabled={isLoading}
+          >
             <Send className="h-4 w-4" />
           </Button>
         </div>
