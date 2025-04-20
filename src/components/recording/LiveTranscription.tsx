@@ -19,29 +19,6 @@ export const LiveTranscription = ({ isRecording, onTranscriptUpdate }: Props) =>
   const [recordingInterval, setRecordingInterval] = useState<NodeJS.Timeout | null>(null);
   const { toast } = useToast();
   
-  // Check for Supabase configuration on mount
-  useEffect(() => {
-    // Debug what environment variables are available
-    console.log('Available Vite env vars:', Object.keys(import.meta.env).filter(key => key.startsWith('VITE_')));
-    
-    // Use optional chaining and nullish coalescing to avoid errors
-    const supabaseUrl = import.meta.env?.VITE_SUPABASE_URL || '';
-    const supabaseKey = import.meta.env?.VITE_SUPABASE_ANON_KEY || '';
-    
-    console.log('VITE_SUPABASE_URL in LiveTranscription:', supabaseUrl || 'not set');
-    console.log('VITE_SUPABASE_ANON_KEY in LiveTranscription configured:', !!supabaseKey);
-    
-    if (!supabaseUrl || !supabaseKey) {
-      setStatus('error');
-      setErrorMessage('Supabase configuration missing');
-      toast({
-        title: "Configuration Error",
-        description: "Supabase environment variables are not properly configured. Please check your setup.",
-        variant: "destructive"
-      });
-    }
-  }, [toast]);
-  
   // Start recording when the component is mounted and isRecording is true
   useEffect(() => {
     if (isRecording) {
@@ -125,13 +102,27 @@ export const LiveTranscription = ({ isRecording, onTranscriptUpdate }: Props) =>
       const formData = new FormData();
       formData.append('audio', audioBlob);
       
-      // Fix: Use the hardcoded Supabase URL from client.ts instead of accessing protected property
+      // We'll use fetch with the Authorization header from supabase
       const transcribeUrl = "https://objlnvvnifkotxctblgd.supabase.co/functions/v1/transcribe";
       console.log('Sending transcription request to:', transcribeUrl);
       console.log('Audio blob size:', audioBlob.size, 'bytes');
       
+      // Get the auth header from supabase
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      
+      // Use the session token or anon key for authorization
+      const authHeader = session?.access_token 
+        ? `Bearer ${session.access_token}`
+        : `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`;
+      
       const response = await fetch(transcribeUrl, {
         method: 'POST',
+        headers: {
+          'Authorization': authHeader,
+          'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY
+        },
         body: formData,
       });
       

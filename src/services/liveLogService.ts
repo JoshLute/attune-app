@@ -7,14 +7,19 @@ import { supabase } from "@/integrations/supabase/client";
 export const addLiveLogEntry = async (entry: Omit<LiveLogEntry, 'time'>) => {
   try {
     console.log('Attempting to add live log entry to Supabase');
+    
+    // Format time as HH:MM:SS without timezone info to match time column type
+    const now = new Date();
+    const timeStr = now.toTimeString().split(' ')[0];
+    
     const { data, error } = await supabase
-      .from('live log') // Fix: Use correct table name with space
+      .from('live log') // Use correct table name with space
       .insert([
         {
-          time: new Date().toISOString(),
-          confusion: entry.confusion_level, // Fix: Match database column names
-          inattention: 100 - entry.attention_level, // Fix: Convert attention to inattention
-          transcription: entry.transcription_text || '' // Fix: Match database column name
+          time: timeStr, // Format as HH:MM:SS to match time type
+          confusion: entry.confusion_level, // Match database column names
+          inattention: 100 - entry.attention_level, // Convert attention to inattention
+          transcription: entry.transcription_text || '' // Match database column name
         },
       ]);
 
