@@ -345,9 +345,10 @@ const AnalyticsPage = () => {
             </div>
           </div>
           
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-            {/* Main area with graph now replaced: Parts to Review goes here */}
-            <div className="lg:col-span-2 flex flex-col gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 mb-8">
+            {/* MAIN COLUMN: col-span-3 on large screens */}
+            <div className="lg:col-span-3 flex flex-col gap-6">
+              {/* Analytics Chart */}
               <div className="rounded-3xl p-6 bg-gray-50 shadow-[5px_5px_15px_rgba(0,0,0,0.05),_-5px_-5px_15px_rgba(255,255,255,0.8)]">
                 <div className="flex items-center justify-between mb-4">
                   <div className="flex items-center">
@@ -422,29 +423,33 @@ const AnalyticsPage = () => {
                   </ChartContainer>
                 </div>
               </div>
-              {/* PartsToReviewSection now shown below the graph, takes up full width */}
-              <PartsToReviewSection analytics={analyticsData} className="mt-4" />
-            </div>
-
-            {/* Right sidebar */}
-            <div className="space-y-6 flex flex-col">
-              <AISuggestionsSection />
+              
+              {/* LESSON SUMMARY stretched full width */}
               <LessonSummary
                 understanding={understandingAvg}
                 attention={attentionAvg}
                 summary={summary}
               />
-              {/* Transcript moved here, below summary */}
-              <div className="mt-4">
+
+              {/* PARTS TO REVIEW full width below summary */}
+              <PartsToReviewSection analytics={analyticsData} className="mt-0" />
+
+              {/* SESSION TRANSCRIPT below everything, full width */}
+              <div className="mt-1 mb-3">
                 <h3 className="text-lg font-medium text-[hsl(var(--attune-purple))] mb-2">Session Transcript</h3>
-                <div className="max-h-40 overflow-y-auto rounded-xl border border-gray-200 p-3 shadow-inner bg-white">
+                <div className="max-h-80 overflow-y-auto rounded-2xl border-0 bg-white/90 shadow-[0_4px_24px_0_rgba(123,104,238,0.06)] p-6">
                   {analyticsData.map((item, index) => (
-                    <div key={index} className="mb-2">
-                      <span className="text-sm">{item.transcript}</span>
+                    <div key={index} className="mb-3">
+                      <span className="text-[15px] text-gray-800">{item.transcript}</span>
                     </div>
                   ))}
                 </div>
               </div>
+            </div>
+
+            {/* SIDEBAR COLUMN: col-span-2 on large screens */}
+            <div className="lg:col-span-2 space-y-6 flex flex-col">
+              <AISuggestionsSection />
             </div>
           </div>
         </div>
