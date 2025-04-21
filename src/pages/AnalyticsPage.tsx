@@ -11,6 +11,7 @@ import { useToast } from '@/hooks/use-toast';
 import { LessonSummary } from "@/components/analytics/LessonSummary";
 import { LessonSwitcher } from "@/components/analytics/LessonSwitcher";
 import { PartsToReviewSection } from "@/components/analytics/PartsToReviewSection";
+import { useSessions } from "@/contexts/SessionsContext";
 
 // Mock data for the analytics chart
 const analyticsDataToday = [
@@ -272,20 +273,25 @@ const AISuggestionsSection = () => {
 };
 
 const AnalyticsPage = () => {
+  const { sessions } = useSessions();
   // Use the first lesson as default
-  const [selectedLessonId, setSelectedLessonId] = useState(lessons[0].id);
+  const [selectedLessonId, setSelectedLessonId] = useState(sessions[0]?.id || "");
   const { toast } = useToast();
 
   // Find the lesson
-  const selectedLesson = lessons.find(l => l.id === selectedLessonId) || lessons[0];
-  const { analytics: analyticsData, outline: lessonOutline, summary } = selectedLesson;
+  const selectedLesson = sessions.find(l => l.id === selectedLessonId) || sessions[0];
+  const { analytics: analyticsData, outline: lessonOutline, summary } = selectedLesson || {
+    analytics: [],
+    outline: [],
+    summary: ""
+  };
 
   // Compute average understanding & attention for summary (rounded)
   const understandingAvg = Math.round(
-    analyticsData.reduce((acc, cur) => acc + cur.understanding, 0) / analyticsData.length
+    (analyticsData?.reduce((acc, cur) => acc + cur.understanding, 0) || 0) / (analyticsData?.length || 1)
   );
   const attentionAvg = Math.round(
-    analyticsData.reduce((acc, cur) => acc + cur.attention, 0) / analyticsData.length
+    (analyticsData?.reduce((acc, cur) => acc + cur.attention, 0) || 0) / (analyticsData?.length || 1)
   );
   
   const [timeRange, setTimeRange] = useState<'today' | 'week' | 'month'>('today');
@@ -330,8 +336,6 @@ const AnalyticsPage = () => {
             </div>
             <div className="flex flex-col sm:flex-row items-center gap-2">
               <LessonSwitcher
-                lessonIds={lessons.map(l => l.id)}
-                lessonNames={lessons.map(l => l.name)}
                 value={selectedLessonId}
                 onChange={setSelectedLessonId}
               />
@@ -353,7 +357,7 @@ const AnalyticsPage = () => {
                 <div className="flex items-center justify-between mb-4">
                   <div className="flex items-center">
                     <BookOpen className="mr-2 text-[hsl(var(--attune-purple))]" />
-                    <h2 className="text-xl font-semibold text-[hsl(var(--attune-purple))]">{selectedLesson.name}</h2>
+                    <h2 className="text-xl font-semibold text-[hsl(var(--attune-purple))]">{selectedLesson?.name}</h2>
                   </div>
                   <div className="flex items-center gap-2">
                     <div className="flex rounded-lg overflow-hidden shadow-[2px_2px_5px_rgba(0,0,0,0.08)]">
@@ -442,7 +446,7 @@ const AnalyticsPage = () => {
           <div className="mt-8">
             <h3 className="text-lg font-medium text-[hsl(var(--attune-purple))] mb-2">Session Transcript</h3>
             <div className="max-h-80 overflow-y-auto rounded-2xl bg-white/90 shadow-[0_4px_24px_0_rgba(123,104,238,0.06)] p-6">
-              {analyticsData.map((item, index) => (
+              {analyticsData?.map((item, index) => (
                 <div key={index} className="mb-3">
                   <span className="text-[15px] text-gray-800">{item.transcript}</span>
                 </div>
