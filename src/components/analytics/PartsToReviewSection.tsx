@@ -73,11 +73,11 @@ export const PartsToReviewSection: React.FC<PartsToReviewSectionProps> = ({
   return (
     <div className={`w-full mt-6 animate-fade-in transition-all ${className}`}>
       <Card className="rounded-3xl shadow-[0_8px_38px_-10px_rgba(123,104,238,0.10)]">
-        <CardHeader className="bg-[hsl(var(--attune-purple))] text-white pb-3 px-6 rounded-t-3xl">
+        <CardHeader className="bg-[hsl(var(--attune-light-purple))] text-white pb-3 px-6 rounded-t-3xl">
           <CardTitle className="text-2xl font-bold">Parts to Review</CardTitle>
         </CardHeader>
 
-        <CardContent className="px-3 md:px-6 py-6">
+        <CardContent className="px-3 md:px-6 py-6 bg-white">
           {toReview.length === 0 ? (
             <div className="flex justify-center items-center min-h-[70px] text-base text-green-700 font-medium">
               No parts need review! 🎉
