@@ -96,12 +96,7 @@ const RecordingPage = () => {
     
     const transcriptInterval = setInterval(() => {
       const randomPhrase = phrases[Math.floor(Math.random() * phrases.length)];
-      setTranscript(prev => {
-        const newTranscript = [...prev, randomPhrase];
-        // Store transcript in sessionStorage
-        sessionStorage.setItem('currentTranscript', JSON.stringify(newTranscript));
-        return newTranscript;
-      });
+      setTranscript(prev => [...prev, randomPhrase]);
     }, 3000);
     
     return () => {
@@ -236,7 +231,6 @@ const RecordingPage = () => {
                       />
                     </div>
                   </div>
-                </div>
                 
                 {/* Transcript */}
                 <div className="bg-[#F1F0FB] p-6 rounded-3xl">
