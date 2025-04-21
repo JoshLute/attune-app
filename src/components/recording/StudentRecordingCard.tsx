@@ -1,9 +1,9 @@
 
-import React from 'react';
+import React, { useRef } from 'react';
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
+import { Timer } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { Timer } from 'lucide-react';
 
 interface StudentRecordingCardProps {
   name: string;
@@ -11,24 +11,36 @@ interface StudentRecordingCardProps {
   understanding: number;
   attention: number;
   recordingTime: number;
-  onTagClick: (tag: string) => void;
-  activeTag: string | null;
+  onBehaviorClick: () => void;
+  isBehaviorSidebarOpen: boolean;
 }
 
-export function StudentRecordingCard({ 
-  name, 
-  avatarUrl, 
+export function StudentRecordingCard({
+  name,
+  avatarUrl,
   understanding,
   attention,
   recordingTime,
-  onTagClick,
-  activeTag
+  onBehaviorClick,
+  isBehaviorSidebarOpen
 }: StudentRecordingCardProps) {
-  const behaviorTags = ['Visibly Confused', 'Verbal Outburst', 'Distracting Others'];
+  const isConfused = understanding < 25;
   const minutes = Math.floor(recordingTime / 60);
   const seconds = recordingTime % 60;
 
-  const isConfused = understanding < 25;
+  // Smooth animation for the button
+  const btnRef = useRef<HTMLButtonElement>(null);
+
+  const handleButtonClick = () => {
+    // Button uses Tailwind for smooth scale, no shake
+    if (btnRef.current) {
+      btnRef.current.classList.add("scale-105", "shadow-lg", "ring-2", "ring-[#9b87f5]");
+      setTimeout(() => {
+        btnRef.current?.classList.remove("scale-105", "shadow-lg", "ring-2", "ring-[#9b87f5]");
+      }, 180);
+    }
+    onBehaviorClick();
+  };
 
   return (
     <div className="rounded-3xl bg-[#F1F0FB] p-6 mb-4 flex flex-col space-y-4">
@@ -49,27 +61,22 @@ export function StudentRecordingCard({
         </div>
         <div className="flex items-center gap-2 text-[hsl(var(--attune-purple))]">
           <Timer className="w-5 h-5" />
-          <span className="font-mono text-lg">
-            {String(minutes).padStart(2, '0')}:{String(seconds).padStart(2, '0')}
-          </span>
+          <span className="font-mono text-lg">{String(minutes).padStart(2, '0')}:{String(seconds).padStart(2, '0')}</span>
         </div>
       </div>
-
-      <div className="flex flex-wrap gap-2">
-        {behaviorTags.map((tag) => (
-          <button
-            key={tag}
-            onClick={() => onTagClick(tag)}
-            className={cn(
-              "px-4 py-2 rounded-full transition-all duration-200",
-              activeTag === tag 
-                ? "bg-[hsl(var(--attune-purple))] text-white shadow-lg scale-105" 
-                : "bg-white hover:bg-gray-50 text-gray-700 border border-gray-200"
-            )}
-          >
-            {tag}
-          </button>
-        ))}
+      {/* Single behavior button */}
+      <div className="flex gap-2">
+        <button
+          ref={btnRef}
+          type="button"
+          onClick={handleButtonClick}
+          className={cn(
+            "flex-grow px-6 py-3 rounded-full bg-[hsl(var(--attune-purple))] text-white shadow-md text-lg font-semibold transition-all duration-200 hover:scale-105 hover:shadow-lg focus:outline-none active:scale-100",
+            isBehaviorSidebarOpen && "ring-2 ring-[hsl(var(--attune-purple))]/80"
+          )}
+        >
+          Add Behavior
+        </button>
       </div>
     </div>
   );

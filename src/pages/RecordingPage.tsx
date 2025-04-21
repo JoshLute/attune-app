@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { AttuneSidebar } from "@/components/sidebar/AttuneSidebar";
 import { Button } from "@/components/ui/button";
@@ -9,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
 import { useNavigate } from "react-router-dom";
 import { RecordingSetup } from "@/components/recording/RecordingSetup";
+import BehaviorSidebar from "@/components/recording/BehaviorSidebar";
 
 type StudentStatus = 'Attentive' | 'Confused' | 'Inattentive';
 
@@ -30,6 +30,8 @@ const RecordingPage = () => {
   const [transcript, setTranscript] = useState<string[]>([]);
   const [recordingTime, setRecordingTime] = useState(0);
   const [activeTag, setActiveTag] = useState<string | null>(null);
+  const [behaviorSidebarOpen, setBehaviorSidebarOpen] = useState(false);
+  const [behaviorEvents, setBehaviorEvents] = useState<{ tag: string, timestamp: number }[]>([]);
 
   // Handle recording timer
   useEffect(() => {
@@ -107,8 +109,27 @@ const RecordingPage = () => {
     };
   };
 
-  const handleBehaviorTag = (tag: string) => {
-    setActiveTag(activeTag === tag ? null : tag);
+  // When user clicks main behavior button, open sidebar and add event
+  const handleBehaviorClick = () => {
+    const tags = [
+      "Visibly Confused",
+      "Verbal Outburst",
+      "Distracting Others"
+    ];
+    // show sidebar
+    setBehaviorSidebarOpen(true);
+    // For simplicity, prompt for tag, but in a real UI use a dropdown, etc.
+    // For now, just cycle the tags for demo.
+    const lastEvent = behaviorEvents[behaviorEvents.length - 1];
+    let nextTagIdx = 0;
+    if (lastEvent) {
+      const lastTagIdx = tags.findIndex(t => t === lastEvent.tag);
+      nextTagIdx = (lastTagIdx + 1) % tags.length;
+    }
+    setBehaviorEvents(evts => [
+      ...evts,
+      { tag: tags[nextTagIdx], timestamp: recordingTime }
+    ]);
   };
 
   const handleEndSession = () => {
@@ -190,7 +211,6 @@ const RecordingPage = () => {
                   End Session
                 </Button>
               </div>
-              
               <div className="space-y-6">
                 {/* Student Card */}
                 <StudentRecordingCard
@@ -199,10 +219,16 @@ const RecordingPage = () => {
                   understanding={understanding}
                   attention={attention}
                   recordingTime={recordingTime}
-                  onTagClick={handleBehaviorTag}
-                  activeTag={activeTag}
+                  onBehaviorClick={handleBehaviorClick}
+                  isBehaviorSidebarOpen={behaviorSidebarOpen}
                 />
-                
+                {/* Behavior Sidebar (overlays from right) */}
+                <BehaviorSidebar
+                  open={behaviorSidebarOpen}
+                  onClose={() => setBehaviorSidebarOpen(false)}
+                  events={behaviorEvents}
+                  recordingTime={recordingTime}
+                />
                 {/* Live Metrics */}
                 <div className="bg-[#F1F0FB] p-6 rounded-3xl space-y-4">
                   <h3 className="text-xl font-semibold text-[hsl(var(--attune-purple))]">Live Metrics</h3>
