@@ -1,11 +1,11 @@
-
 import React from 'react';
 import { AttuneSidebar } from '@/components/sidebar/AttuneSidebar';
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from '@/components/ui/carousel';
 import { Button } from '@/components/ui/button';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Card } from '@/components/ui/card';
 import { UsersRound, Brain, Clock, Sparkles } from 'lucide-react';
+import { useSessions } from '@/contexts/SessionsContext';
 
 const SessionCard = ({ 
   date, 
@@ -53,12 +53,8 @@ const StatsCard = ({ icon: Icon, label, value }: { icon: any, label: string, val
 );
 
 const Index = () => {
-  const sessionData = [
-    { date: "Yesterday", understandingPercent: 68, confusedPercent: 32, keyMoments: 4 },
-    { date: "May 1", understandingPercent: 24, confusedPercent: 76, keyMoments: 8 },
-    { date: "April 30", understandingPercent: 88, confusedPercent: 12, keyMoments: 2 },
-    { date: "April 29", understandingPercent: 45, confusedPercent: 55, keyMoments: 6 }
-  ];
+  const { sessions } = useSessions();
+  const navigate = useNavigate();
 
   return (
     <div className="flex h-screen bg-gradient-to-br from-white to-gray-50">
@@ -83,8 +79,12 @@ const Index = () => {
             <h2 className="text-2xl font-semibold text-[hsl(var(--attune-purple))] mb-4">Recent Sessions</h2>
             <Carousel className="w-full">
               <CarouselContent className="-ml-4 md:-ml-6">
-                {sessionData.map((session, index) => (
-                  <CarouselItem key={index} className="pl-4 md:pl-6 md:basis-1/2 lg:basis-1/3">
+                {sessions.map((session) => (
+                  <CarouselItem 
+                    key={session.id} 
+                    className="pl-4 md:pl-6 md:basis-1/2 lg:basis-1/3 cursor-pointer"
+                    onClick={() => navigate(`/analytics?lesson=${session.id}`)}
+                  >
                     <SessionCard 
                       date={session.date}
                       understandingPercent={session.understandingPercent}
