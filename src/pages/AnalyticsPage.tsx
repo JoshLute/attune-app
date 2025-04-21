@@ -8,6 +8,8 @@ import { Separator } from '@/components/ui/separator';
 import { Button } from '@/components/ui/button';
 import { BookOpen, Activity, AlertTriangle, Eye, Lightbulb, Download, FileText } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { LessonSummary } from "@/components/analytics/LessonSummary";
+import { LessonSwitcher } from "@/components/analytics/LessonSwitcher";
 
 // Mock data for the analytics chart
 const analyticsDataToday = [
@@ -61,6 +63,81 @@ const lessonOutline = [
     status: 'attentive',
     transcript: "Let's review what we've learned about photosynthesis."
   },
+];
+
+// --- Mock lesson list --- //
+const lessons = [
+  {
+    id: "lesson-1",
+    name: "Photosynthesis - April 20",
+    analytics: [
+      { timestamp: '00:00', attention: 90, understanding: 95, transcript: "Today we're going to learn about photosynthesis." },
+      { timestamp: '02:30', attention: 85, understanding: 80, transcript: "The process requires sunlight, water, and carbon dioxide." },
+      { timestamp: '05:00', attention: 60, understanding: 40, transcript: "The light reactions happen in the thylakoid membrane." },
+      { timestamp: '07:30', attention: 70, understanding: 30, transcript: "ATP and NADPH are produced in this stage." },
+      { timestamp: '10:00', attention: 80, understanding: 60, transcript: "Next, the Calvin cycle uses these products." },
+      { timestamp: '12:30', attention: 90, understanding: 85, transcript: "Carbon fixation happens during this cycle." },
+      { timestamp: '15:00', attention: 95, understanding: 90, transcript: "Let's review what we've learned about photosynthesis." },
+    ],
+    outline: [
+      { 
+        timestamp: '00:00 - 05:00', 
+        topic: 'Introduction to Photosynthesis', 
+        status: 'attentive',
+        transcript: "Today we're going to learn about photosynthesis. The process requires sunlight, water, and carbon dioxide."
+      },
+      { 
+        timestamp: '05:00 - 08:00', 
+        topic: 'Light Reactions', 
+        status: 'confused',
+        transcript: "The light reactions happen in the thylakoid membrane. ATP and NADPH are produced in this stage."
+      },
+      { 
+        timestamp: '08:00 - 13:00', 
+        topic: 'Calvin Cycle', 
+        status: 'inattentive',
+        transcript: "Next, the Calvin cycle uses these products. Carbon fixation happens during this cycle."
+      },
+      { 
+        timestamp: '13:00 - 15:00', 
+        topic: 'Summary and Review', 
+        status: 'attentive',
+        transcript: "Let's review what we've learned about photosynthesis."
+      },
+    ],
+    summary: "This lesson introduced students to photosynthesis, covered the light reactions and Calvin cycle, and ended with a review.",
+  },
+  {
+    id: "lesson-2",
+    name: "Genetics - April 18",
+    analytics: [
+      { timestamp: '00:00', attention: 75, understanding: 70, transcript: "Let's start with basic concepts in genetics." },
+      { timestamp: '03:00', attention: 60, understanding: 65, transcript: "A gene is a segment of DNA that codes for a protein." },
+      { timestamp: '06:00', attention: 85, understanding: 80, transcript: "Dominant and recessive traits are inherited differently." },
+      { timestamp: '09:00', attention: 80, understanding: 85, transcript: "Punnett squares help predict genetic outcomes." }
+    ],
+    outline: [
+      { 
+        timestamp: '00:00 - 04:00', 
+        topic: 'Introduction to Genetics', 
+        status: 'attentive',
+        transcript: "Let's start with basic concepts in genetics."
+      },
+      { 
+        timestamp: '04:00 - 07:00', 
+        topic: 'Genetic Terminology', 
+        status: 'confused',
+        transcript: "A gene is a segment of DNA that codes for a protein."
+      },
+      { 
+        timestamp: '07:00 - 10:00', 
+        topic: 'Inheritance Patterns', 
+        status: 'attentive',
+        transcript: "Dominant and recessive traits are inherited differently."
+      }
+    ],
+    summary: "Reviewed basic genetics, gene definitions, and how traits are inherited, using Punnett squares for demonstration.",
+  }
 ];
 
 // AI Suggestions for teaching
@@ -194,8 +271,23 @@ const AISuggestionsSection = () => {
 };
 
 const AnalyticsPage = () => {
-  const [timeRange, setTimeRange] = useState<'today' | 'week' | 'month'>('today');
+  // Use the first lesson as default
+  const [selectedLessonId, setSelectedLessonId] = useState(lessons[0].id);
   const { toast } = useToast();
+
+  // Find the lesson
+  const selectedLesson = lessons.find(l => l.id === selectedLessonId) || lessons[0];
+  const { analytics: analyticsData, outline: lessonOutline, summary } = selectedLesson;
+
+  // Compute average understanding & attention for summary (rounded)
+  const understandingAvg = Math.round(
+    analyticsData.reduce((acc, cur) => acc + cur.understanding, 0) / analyticsData.length
+  );
+  const attentionAvg = Math.round(
+    analyticsData.reduce((acc, cur) => acc + cur.attention, 0) / analyticsData.length
+  );
+  
+  const [timeRange, setTimeRange] = useState<'today' | 'week' | 'month'>('today');
   const lessonTitle = sessionStorage.getItem('currentLessonTitle') || 'Lesson Title';
   
   const getDataByTimeRange = () => {
@@ -230,18 +322,26 @@ const AnalyticsPage = () => {
       <AttuneSidebar />
       <div className="flex-1 p-6 overflow-y-auto">
         <div className="max-w-7xl mx-auto">
-          <div className="flex justify-between items-center mb-6">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
             <div>
               <h1 className="text-3xl font-bold text-gray-800 mb-2">Analytics</h1>
               <p className="text-gray-500">Get insights from class sessions</p>
             </div>
-            <Button 
-              onClick={handleDownloadReport} 
-              className="bg-[hsl(var(--attune-purple))] hover:bg-[hsl(var(--attune-dark-purple))]"
-            >
-              <Download className="mr-2 h-4 w-4" />
-              Download Report
-            </Button>
+            <div className="flex flex-col sm:flex-row items-center gap-2">
+              <LessonSwitcher
+                lessonIds={lessons.map(l => l.id)}
+                lessonNames={lessons.map(l => l.name)}
+                value={selectedLessonId}
+                onChange={setSelectedLessonId}
+              />
+              <Button 
+                onClick={handleDownloadReport} 
+                className="bg-[hsl(var(--attune-purple))] hover:bg-[hsl(var(--attune-dark-purple))]"
+              >
+                <Download className="mr-2 h-4 w-4" />
+                Download Report
+              </Button>
+            </div>
           </div>
           
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
@@ -249,7 +349,7 @@ const AnalyticsPage = () => {
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center">
                   <BookOpen className="mr-2 text-[hsl(var(--attune-purple))]" />
-                  <h2 className="text-xl font-semibold text-[hsl(var(--attune-purple))]">{lessonTitle}</h2>
+                  <h2 className="text-xl font-semibold text-[hsl(var(--attune-purple))]">{selectedLesson.name}</h2>
                 </div>
                 <div className="flex items-center gap-2">
                   <div className="flex rounded-lg overflow-hidden shadow-[2px_2px_5px_rgba(0,0,0,0.08)]">
@@ -282,12 +382,15 @@ const AnalyticsPage = () => {
               </div>
               <div className="h-[300px] w-full">
                 <ChartContainer
-                  config={chartConfig}
+                  config={{
+                    attention: { theme: { light: "#9FE2BF", dark: "#3CB371" } },
+                    understanding: { theme: { light: "#ADD8E6", dark: "#1E90FF" } }
+                  }}
                   className="h-full w-full [&_.recharts-cartesian-grid-horizontal_line]:stroke-muted [&_.recharts-cartesian-grid-vertical_line]:stroke-muted"
                 >
                   <ResponsiveContainer width="100%" height="100%">
                     <AreaChart
-                      data={getDataByTimeRange()}
+                      data={analyticsData}
                       margin={{ top: 10, right: 30, left: 0, bottom: 0 }}
                     >
                       <CartesianGrid strokeDasharray="3 3" />
@@ -318,7 +421,7 @@ const AnalyticsPage = () => {
               <div className="mt-6">
                 <h3 className="text-lg font-medium text-[hsl(var(--attune-purple))] mb-2">Session Transcript</h3>
                 <div className="max-h-40 overflow-y-auto rounded-xl border border-gray-200 p-3 shadow-inner bg-white">
-                  {getDataByTimeRange().map((item, index) => (
+                  {analyticsData.map((item, index) => (
                     <div key={index} className="mb-2">
                       <span className="text-sm">{item.transcript}</span>
                     </div>
@@ -339,8 +442,11 @@ const AnalyticsPage = () => {
                   ))}
                 </div>
               </div>
-              
-              <UnderstandingSummary />
+              <LessonSummary
+                understanding={understandingAvg}
+                attention={attentionAvg}
+                summary={summary}
+              />
             </div>
           </div>
           
