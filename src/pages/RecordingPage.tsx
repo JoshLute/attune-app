@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { AttuneSidebar } from "@/components/sidebar/AttuneSidebar";
 import { Button } from "@/components/ui/button";
@@ -9,6 +8,7 @@ import { useNavigate } from "react-router-dom";
 import { RecordingSetup } from "@/components/recording/RecordingSetup";
 import BehaviorSidebar from "@/components/recording/BehaviorSidebar";
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/components/ui/accordion";
+import { useToast } from "@/hooks/use-toast";
 
 type StudentStatus = 'Attentive' | 'Confused' | 'Inattentive';
 
@@ -26,6 +26,7 @@ const BEHAVIOR_TAGS = [
 
 const RecordingPage = () => {
   const navigate = useNavigate();
+  const { toast } = useToast();
   const [isSetupDialogOpen, setIsSetupDialogOpen] = useState(true);
   const [setupStep, setSetupStep] = useState<'student' | 'materials' | 'recording'>('student');
   const [selectedStudent, setSelectedStudent] = useState<string | null>(null);
@@ -36,7 +37,6 @@ const RecordingPage = () => {
   const [transcript, setTranscript] = useState<string[]>([]);
   const [recordingTime, setRecordingTime] = useState(0);
   const [activeTag, setActiveTag] = useState<string | null>(null);
-  const [behaviorSidebarOpen, setBehaviorSidebarOpen] = useState(false);
   const [behaviorEvents, setBehaviorEvents] = useState<{ tag: string, timestamp: number }[]>([]);
   const prevUnderstanding = useRef(understanding);
   const prevAttention = useRef(attention);
@@ -129,7 +129,6 @@ const RecordingPage = () => {
       "Distracting Others"
     ];
     // show sidebar
-    setBehaviorSidebarOpen(true);
     // For simplicity, prompt for tag, but in a real UI use a dropdown, etc.
     // For now, just cycle the tags for demo.
     const lastEvent = behaviorEvents[behaviorEvents.length - 1];
@@ -146,11 +145,19 @@ const RecordingPage = () => {
 
   // Handle 3 quick click behavior buttons
   const handleQuickBehavior = (tag: string) => {
-    setBehaviorSidebarOpen(true);
     setBehaviorEvents(evts => [
       ...evts,
       { tag, timestamp: recordingTime }
     ]);
+
+    // Show toast notification
+    if (activeStudent) {
+      toast({
+        title: "Behavior Recorded",
+        description: `${activeStudent.name} - ${tag}`,
+        duration: 3000,
+      });
+    }
   };
 
   const handleEndSession = () => {
@@ -222,6 +229,7 @@ const RecordingPage = () => {
           {/* Recording Session UI */}
           {isRecording && activeStudent && (
             <>
+              {/* Header */}
               <div className="flex justify-between items-center mb-6">
                 <h1 className="text-3xl font-bold text-[hsl(var(--attune-purple))]">
                   {lessonTitle || "Lesson"}
@@ -234,6 +242,7 @@ const RecordingPage = () => {
                   End Session
                 </Button>
               </div>
+              
               <div className="space-y-6">
                 {/* Student Card */}
                 <div className="rounded-3xl bg-[#F1F0FB] p-6 mb-4 flex flex-col space-y-4">
@@ -258,6 +267,7 @@ const RecordingPage = () => {
                       </span>
                     </div>
                   </div>
+                  
                   {/* 3 Quick Behavior Buttons */}
                   <div className="flex gap-3">
                     {BEHAVIOR_TAGS.map(tag => (
@@ -272,13 +282,7 @@ const RecordingPage = () => {
                     ))}
                   </div>
                 </div>
-                {/* Behavior Sidebar (overlays from right) */}
-                <BehaviorSidebar
-                  open={behaviorSidebarOpen}
-                  onClose={() => setBehaviorSidebarOpen(false)}
-                  events={behaviorEvents}
-                  recordingTime={recordingTime}
-                />
+
                 {/* Live Metrics */}
                 <div className="bg-[#F1F0FB] p-6 rounded-3xl space-y-4">
                   <h3 className="text-xl font-semibold text-[hsl(var(--attune-purple))]">Live Metrics</h3>
