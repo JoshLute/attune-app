@@ -346,8 +346,9 @@ const AnalyticsPage = () => {
           </div>
           
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-            {/* Main area with graph now replaced: Parts to Review goes here */}
+            {/* Main column (2/3 width on large screens) */}
             <div className="lg:col-span-2 flex flex-col gap-6">
+              {/* Chart Area */}
               <div className="rounded-3xl p-6 bg-gray-50 shadow-[5px_5px_15px_rgba(0,0,0,0.05),_-5px_-5px_15px_rgba(255,255,255,0.8)]">
                 <div className="flex items-center justify-between mb-4">
                   <div className="flex items-center">
@@ -422,29 +423,33 @@ const AnalyticsPage = () => {
                   </ChartContainer>
                 </div>
               </div>
-              {/* PartsToReviewSection now shown below the graph, takes up full width */}
+              {/* PartsToReviewSection directly below the chart */}
               <PartsToReviewSection analytics={analyticsData} className="mt-4" />
+              {/* Lesson Summary now stretches full width under PartsToReviewSection */}
+              <div>
+                <LessonSummary
+                  understanding={understandingAvg}
+                  attention={attentionAvg}
+                  summary={summary}
+                />
+              </div>
             </div>
 
-            {/* Right sidebar */}
+            {/* Sidebar column */}
             <div className="space-y-6 flex flex-col">
               <AISuggestionsSection />
-              <LessonSummary
-                understanding={understandingAvg}
-                attention={attentionAvg}
-                summary={summary}
-              />
-              {/* Transcript moved here, below summary */}
-              <div className="mt-4">
-                <h3 className="text-lg font-medium text-[hsl(var(--attune-purple))] mb-2">Session Transcript</h3>
-                <div className="max-h-40 overflow-y-auto rounded-xl border border-gray-200 p-3 shadow-inner bg-white">
-                  {analyticsData.map((item, index) => (
-                    <div key={index} className="mb-2">
-                      <span className="text-sm">{item.transcript}</span>
-                    </div>
-                  ))}
+            </div>
+          </div>
+
+          {/* Transcript now sits below the entire grid, full width */}
+          <div className="mt-8">
+            <h3 className="text-lg font-medium text-[hsl(var(--attune-purple))] mb-2">Session Transcript</h3>
+            <div className="max-h-80 overflow-y-auto rounded-2xl bg-white/90 shadow-[0_4px_24px_0_rgba(123,104,238,0.06)] p-6">
+              {analyticsData.map((item, index) => (
+                <div key={index} className="mb-3">
+                  <span className="text-[15px] text-gray-800">{item.transcript}</span>
                 </div>
-              </div>
+              ))}
             </div>
           </div>
         </div>
