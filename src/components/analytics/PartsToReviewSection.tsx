@@ -7,6 +7,12 @@ import {
   CarouselNext,
   CarouselPrevious
 } from "@/components/ui/carousel";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 
 interface AnalyticsItem {
   timestamp: string;
@@ -66,93 +72,94 @@ export const PartsToReviewSection: React.FC<PartsToReviewSectionProps> = ({
 
   return (
     <div className={`w-full mt-6 animate-fade-in transition-all ${className}`}>
-      <div className="rounded-3xl py-6 px-3 md:px-6 bg-[hsl(var(--attune-light-purple))] shadow-[0_8px_38px_-10px_rgba(123,104,238,0.10)] mb-2 neumorphic-soft">
-        <div className="flex items-center gap-3 mb-5">
-          <span className="w-2 h-6 bg-gradient-to-b from-purple-400 to-purple-100 rounded-lg mr-2" />
-          <h2 className="text-2xl font-bold text-[hsl(var(--attune-purple))]">Parts to Review</h2>
-        </div>
+      <Card className="rounded-3xl shadow-[0_8px_38px_-10px_rgba(123,104,238,0.10)]">
+        <CardHeader className="bg-[hsl(var(--attune-purple))] text-white pb-3 px-6 rounded-t-3xl">
+          <CardTitle className="text-2xl font-bold">Parts to Review</CardTitle>
+        </CardHeader>
 
-        {toReview.length === 0 ? (
-          <div className="flex justify-center items-center min-h-[70px] text-base text-green-700 font-medium">
-            No parts need review! 🎉
-          </div>
-        ) : (
-          <Carousel
-            orientation="vertical"
-            className="w-full max-w-xl mx-auto relative"
-            opts={{ dragFree: true, align: "start" }}
-          >
-            <CarouselContent className="flex flex-col gap-7">
-              {toReview.map((item, idx) => {
-                const status = getStatus(
-                  item.attention,
-                  item.understanding,
-                  attentionThreshold,
-                  understandingThreshold
-                );
-                return (
-                  <CarouselItem key={idx} className="w-full">
-                    <div
-                      className={`transition duration-150 hover:scale-101 ${status.color} rounded-2xl p-6 flex flex-col gap-2 neumorphic-pressed`}
-                      style={{
-                        boxShadow:
-                          "0 2px 12px 0 rgba(123,104,238,0.03), 4px 4px 24px 0 rgba(123,104,238,0.06)",
-                        border: "none",
-                        background: "inherit"
-                      }}
-                    >
-                      <div className="flex items-center gap-2 mb-1">
-                        <span className="font-semibold">{status.label}</span>
-                        <span
-                          className={`ml-auto text-xs rounded-lg px-2 py-1 font-medium ${status.pill}`}
-                        >
-                          {item.timestamp}
-                        </span>
-                      </div>
-                      <div className="flex gap-4 items-center text-[13px] text-gray-700 mb-2">
-                        <span>
-                          <span className="font-semibold">Attention:</span>{" "}
+        <CardContent className="px-3 md:px-6 py-6">
+          {toReview.length === 0 ? (
+            <div className="flex justify-center items-center min-h-[70px] text-base text-green-700 font-medium">
+              No parts need review! 🎉
+            </div>
+          ) : (
+            <Carousel
+              orientation="vertical"
+              className="w-full max-w-xl mx-auto relative"
+              opts={{ dragFree: true, align: "start" }}
+            >
+              <CarouselContent className="flex flex-col gap-7">
+                {toReview.map((item, idx) => {
+                  const status = getStatus(
+                    item.attention,
+                    item.understanding,
+                    attentionThreshold,
+                    understandingThreshold
+                  );
+                  return (
+                    <CarouselItem key={idx} className="w-full">
+                      <div
+                        className={`transition duration-150 hover:scale-101 ${status.color} rounded-2xl p-6 flex flex-col gap-2 neumorphic-pressed`}
+                        style={{
+                          boxShadow:
+                            "0 2px 12px 0 rgba(123,104,238,0.03), 4px 4px 24px 0 rgba(123,104,238,0.06)",
+                          border: "none",
+                          background: "inherit"
+                        }}
+                      >
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="font-semibold">{status.label}</span>
                           <span
-                            className={
-                              item.attention < attentionThreshold
-                                ? "font-bold text-yellow-700"
-                                : ""
-                            }
+                            className={`ml-auto text-xs rounded-lg px-2 py-1 font-medium ${status.pill}`}
                           >
-                            {item.attention}%
+                            {item.timestamp}
                           </span>
-                        </span>
-                        <span>
-                          <span className="font-semibold">Understanding:</span>{" "}
-                          <span
-                            className={
-                              item.understanding < understandingThreshold
-                                ? "font-bold text-blue-700"
-                                : ""
-                            }
-                          >
-                            {item.understanding}%
+                        </div>
+                        <div className="flex gap-4 items-center text-[13px] text-gray-700 mb-2">
+                          <span>
+                            <span className="font-semibold">Attention:</span>{" "}
+                            <span
+                              className={
+                                item.attention < attentionThreshold
+                                  ? "font-bold text-yellow-700"
+                                  : ""
+                              }
+                            >
+                              {item.attention}%
+                            </span>
                           </span>
-                        </span>
+                          <span>
+                            <span className="font-semibold">Understanding:</span>{" "}
+                            <span
+                              className={
+                                item.understanding < understandingThreshold
+                                  ? "font-bold text-blue-700"
+                                  : ""
+                              }
+                            >
+                              {item.understanding}%
+                            </span>
+                          </span>
+                        </div>
+                        <div className="bg-white/80 shadow-inner rounded-xl p-4 text-[15px] text-gray-800">
+                          <span className="font-bold text-[hsl(var(--attune-purple))]">What was missed:</span>{" "}
+                          {item.transcript}
+                        </div>
                       </div>
-                      <div className="bg-white/80 shadow-inner rounded-xl p-4 text-[15px] text-gray-800">
-                        <span className="font-bold text-[hsl(var(--attune-purple))]">What was missed:</span>{" "}
-                        {item.transcript}
-                      </div>
-                    </div>
-                  </CarouselItem>
-                );
-              })}
-            </CarouselContent>
-            {toReview.length > 1 && (
-              <div className="flex flex-row justify-between mt-4 px-6">
-                <CarouselPrevious />
-                <CarouselNext />
-              </div>
-            )}
-          </Carousel>
-        )}
-      </div>
+                    </CarouselItem>
+                  );
+                })}
+              </CarouselContent>
+              {toReview.length > 1 && (
+                <div className="flex flex-row justify-between mt-4 px-6">
+                  <CarouselPrevious />
+                  <CarouselNext />
+                </div>
+              )}
+            </Carousel>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 };
@@ -161,3 +168,4 @@ export const PartsToReviewSection: React.FC<PartsToReviewSectionProps> = ({
 // Tailwind users: define these in your CSS if you want more control:
 // .neumorphic-soft { box-shadow: 8px 8px 30px #e9e9fb, -8px -8px 25px #ffffff; }
 // .neumorphic-pressed { box-shadow: 2px 2px 10px #e9e9fb inset; }
+
