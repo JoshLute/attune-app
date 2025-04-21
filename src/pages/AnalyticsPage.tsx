@@ -432,7 +432,7 @@ const AnalyticsPage = () => {
             </div>
             
             <div className="space-y-6">
-              <PartsToReviewSection analytics={analyticsData} />
+              <AISuggestionsSection />
               <LessonSummary
                 understanding={understandingAvg}
                 attention={attentionAvg}
@@ -440,8 +440,8 @@ const AnalyticsPage = () => {
               />
             </div>
           </div>
-          
-          <AISuggestionsSection />
+
+          <PartsToReviewSection analytics={analyticsData} className="mt-10" />
         </div>
       </div>
     </div>
