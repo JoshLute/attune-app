@@ -12,7 +12,7 @@ export function AttuneSidebar() {
   const location = useLocation();
   const isRecording = location.pathname === '/recording';
   
-  // Mock data for student cards
+  // Updated mock data for student cards
   const students = [
     {
       id: 'jonathan',
@@ -24,9 +24,9 @@ export function AttuneSidebar() {
     {
       id: 'jp',
       name: 'JP Vela',
-      status: 'confused' as const,
+      status: 'attentive' as const,
       avatarUrl: 'https://api.dicebear.com/7.x/personas/svg?seed=jp',
-      understanding: 20
+      understanding: 85
     },
     {
       id: 'cooper',

@@ -12,6 +12,7 @@ import { LessonSummary } from "@/components/analytics/LessonSummary";
 import { LessonSwitcher } from "@/components/analytics/LessonSwitcher";
 import { PartsToReviewSection } from "@/components/analytics/PartsToReviewSection";
 import { useSessions } from "@/contexts/SessionsContext";
+import { NotesSection } from '@/components/analytics/NotesSection';
 
 // Mock data for the analytics chart
 const analyticsDataToday = [
@@ -288,10 +289,10 @@ const AnalyticsPage = () => {
 
   // Compute average understanding & attention for summary (rounded)
   const understandingAvg = Math.round(
-    (analyticsData?.reduce((acc, cur) => acc + cur.understanding, 0) || 0) / (analyticsData?.length || 1)
+    analyticsData?.reduce((acc, current) => acc + current.understanding, 0) / (analyticsData?.length || 1)
   );
   const attentionAvg = Math.round(
-    (analyticsData?.reduce((acc, cur) => acc + cur.attention, 0) || 0) / (analyticsData?.length || 1)
+    analyticsData?.reduce((acc, current) => acc + current.attention, 0) / (analyticsData?.length || 1)
   );
   
   const [timeRange, setTimeRange] = useState<'today' | 'week' | 'month'>('today');
@@ -431,9 +432,9 @@ const AnalyticsPage = () => {
               <PartsToReviewSection analytics={analyticsData} className="mt-4" />
             </div>
 
-            {/* Sidebar column (AI Suggestions and then LessonSummary) */}
+            {/* Sidebar column (Notes and then LessonSummary) */}
             <div className="space-y-6 flex flex-col">
-              <AISuggestionsSection />
+              <NotesSection />
               <LessonSummary
                 understanding={understandingAvg}
                 attention={attentionAvg}
