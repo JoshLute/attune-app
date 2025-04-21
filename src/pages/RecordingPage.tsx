@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { AttuneSidebar } from "@/components/sidebar/AttuneSidebar";
 import { Button } from "@/components/ui/button";
 import { StudentRecordingCard } from "@/components/recording/StudentRecordingCard";
@@ -18,6 +18,12 @@ interface Student {
   avatarUrl: string;
 }
 
+const BEHAVIOR_TAGS = [
+  "Visibly Confused",
+  "Verbal Outburst",
+  "Distracting Others"
+];
+
 const RecordingPage = () => {
   const navigate = useNavigate();
   const [isSetupDialogOpen, setIsSetupDialogOpen] = useState(true);
@@ -32,6 +38,12 @@ const RecordingPage = () => {
   const [activeTag, setActiveTag] = useState<string | null>(null);
   const [behaviorSidebarOpen, setBehaviorSidebarOpen] = useState(false);
   const [behaviorEvents, setBehaviorEvents] = useState<{ tag: string, timestamp: number }[]>([]);
+  const prevUnderstanding = useRef(understanding);
+  const prevAttention = useRef(attention);
+
+  // For animated progress bar
+  useEffect(() => { prevUnderstanding.current = understanding }, [understanding]);
+  useEffect(() => { prevAttention.current = attention }, [attention]);
 
   // Handle recording timer
   useEffect(() => {
@@ -132,6 +144,15 @@ const RecordingPage = () => {
     ]);
   };
 
+  // Handle 3 quick click behavior buttons
+  const handleQuickBehavior = (tag: string) => {
+    setBehaviorSidebarOpen(true);
+    setBehaviorEvents(evts => [
+      ...evts,
+      { tag, timestamp: recordingTime }
+    ]);
+  };
+
   const handleEndSession = () => {
     navigate("/analytics");
   };
@@ -202,7 +223,9 @@ const RecordingPage = () => {
           {isRecording && activeStudent && (
             <>
               <div className="flex justify-between items-center mb-6">
-                <h1 className="text-3xl font-bold text-[hsl(var(--attune-purple))]">In Session</h1>
+                <h1 className="text-3xl font-bold text-[hsl(var(--attune-purple))]">
+                  {lessonTitle || "Lesson"}
+                </h1>
                 <Button 
                   variant="default"
                   className="bg-[#9b87f5] hover:bg-[#7E69AB]"
@@ -213,15 +236,42 @@ const RecordingPage = () => {
               </div>
               <div className="space-y-6">
                 {/* Student Card */}
-                <StudentRecordingCard
-                  name={activeStudent.name}
-                  avatarUrl={activeStudent.avatarUrl}
-                  understanding={understanding}
-                  attention={attention}
-                  recordingTime={recordingTime}
-                  onBehaviorClick={handleBehaviorClick}
-                  isBehaviorSidebarOpen={behaviorSidebarOpen}
-                />
+                <div className="rounded-3xl bg-[#F1F0FB] p-6 mb-4 flex flex-col space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-4">
+                      <img 
+                        src={activeStudent.avatarUrl}
+                        alt={activeStudent.name}
+                        className="h-16 w-16 rounded-full object-cover"
+                      />
+                      <div className="flex flex-col">
+                        <h3 className="text-xl font-semibold text-[hsl(var(--attune-purple))]">{activeStudent.name}</h3>
+                        {understanding < 25 && (
+                          <span className="inline-flex items-center w-fit mt-1 px-2 py-0.5 bg-red-500 text-white text-xs rounded font-semibold">Confused</span>
+                        )}
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2 text-[hsl(var(--attune-purple))]">
+                      <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2" /><path d="M12 6v6l4 2" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                      <span className="font-mono text-lg">
+                        {String(Math.floor(recordingTime / 60)).padStart(2, '0')}:{String(recordingTime % 60).padStart(2, '0')}
+                      </span>
+                    </div>
+                  </div>
+                  {/* 3 Quick Behavior Buttons */}
+                  <div className="flex gap-3">
+                    {BEHAVIOR_TAGS.map(tag => (
+                      <button
+                        type="button"
+                        key={tag}
+                        onClick={() => handleQuickBehavior(tag)}
+                        className="transition-transform duration-200 flex-1 px-4 py-3 rounded-full bg-[hsl(var(--attune-purple))] text-white font-semibold text-base shadow-md hover:scale-105 active:scale-100 focus:outline-none"
+                      >
+                        {tag}
+                      </button>
+                    ))}
+                  </div>
+                </div>
                 {/* Behavior Sidebar (overlays from right) */}
                 <BehaviorSidebar
                   open={behaviorSidebarOpen}
@@ -232,47 +282,65 @@ const RecordingPage = () => {
                 {/* Live Metrics */}
                 <div className="bg-[#F1F0FB] p-6 rounded-3xl space-y-4">
                   <h3 className="text-xl font-semibold text-[hsl(var(--attune-purple))]">Live Metrics</h3>
-                  
                   <div className="space-y-4">
                     <div>
                       <div className="flex justify-between mb-1">
                         <span className="font-medium">Understanding</span>
                         <span className="font-medium">{understanding}%</span>
                       </div>
-                      <Progress 
-                        value={understanding} 
-                        className="h-3 bg-gray-200"
-                        indicatorColor={understanding < 25 ? '#ef4444' : '#22c55e'} 
-                      />
+                      <div className="relative h-3 bg-gray-200 rounded-full overflow-hidden">
+                        <div
+                          className="absolute left-0 top-0 h-full rounded-full bg-green-500 transition-all duration-700"
+                          style={{
+                            width: `${understanding}%`,
+                            backgroundColor: understanding < 25 ? '#ef4444' : '#22c55e',
+                            transitionProperty: "width, background-color"
+                          }}
+                        />
+                      </div>
                     </div>
-                    
                     <div>
                       <div className="flex justify-between mb-1">
                         <span className="font-medium">Attention</span>
                         <span className="font-medium">{attention}%</span>
                       </div>
-                      <Progress 
-                        value={attention} 
-                        className="h-3 bg-gray-200"
-                        indicatorColor="#3b82f6" 
-                      />
+                      <div className="relative h-3 bg-gray-200 rounded-full overflow-hidden">
+                        <div
+                          className="absolute left-0 top-0 h-full rounded-full bg-blue-500 transition-all duration-700"
+                          style={{
+                            width: `${attention}%`,
+                            transitionProperty: "width"
+                          }}
+                        />
+                      </div>
                     </div>
                   </div>
                 </div>
-                
-                {/* Transcript */}
+                {/* Transcript (collapsible) */}
                 <div className="bg-[#F1F0FB] p-6 rounded-3xl">
                   <h3 className="text-xl font-semibold text-[hsl(var(--attune-purple))] mb-4">Live Transcript</h3>
-                  <div className="bg-white p-4 rounded-xl max-h-60 overflow-y-auto shadow-inner">
-                    {transcript.length > 0 ? (
-                      transcript.map((text, index) => (
-                        <p key={index} className="py-1 border-b border-gray-100 last:border-none">
-                          {text}
-                        </p>
-                      ))
-                    ) : (
-                      <p className="text-gray-500 italic">Waiting for speech...</p>
-                    )}
+                  <div>
+                    <div className="w-full">
+                      <import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/components/ui/accordion" />
+                      <Accordion type="single" collapsible defaultValue={transcript.length > 0 ? "open" : undefined}>
+                        <AccordionItem value="open" className="border-none rounded-xl bg-white p-0">
+                          <AccordionTrigger className="px-3 py-2 rounded-xl focus:outline-none text-base font-medium text-left bg-white hover:bg-gray-100">
+                            {transcript.length > 0 ? "Show Transcript" : "Waiting for speech..."}
+                          </AccordionTrigger>
+                          <AccordionContent className="px-3 pb-4 pt-1 max-h-60 overflow-y-auto shadow-inner bg-white rounded-b-xl">
+                            {transcript.length > 0 ? (
+                              transcript.map((text, index) => (
+                                <p key={index} className="py-1 border-b border-gray-100 last:border-none">
+                                  {text}
+                                </p>
+                              ))
+                            ) : (
+                              <p className="text-gray-500 italic">Waiting for speech...</p>
+                            )}
+                          </AccordionContent>
+                        </AccordionItem>
+                      </Accordion>
+                    </div>
                   </div>
                 </div>
               </div>
