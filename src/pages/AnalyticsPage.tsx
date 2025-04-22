@@ -288,13 +288,17 @@ const AnalyticsPage = () => {
   };
 
   // Compute average understanding & attention for summary (rounded)
-  const understandingAvg = analyticsData?.length > 0 ? Math.round(
-    analyticsData.reduce((acc, current) => acc + current.understanding, 0) / analyticsData.length
-  ) : 0;
+  const understandingAvg = analyticsData?.length > 0 
+    ? Math.round(
+        analyticsData.reduce((acc, current) => acc + (current.understanding || 0), 0) / analyticsData.length
+      ) 
+    : 0;
   
-  const attentionAvg = analyticsData?.length > 0 ? Math.round(
-    analyticsData.reduce((acc, current) => acc + current.attention, 0) / analyticsData.length
-  ) : 0;
+  const attentionAvg = analyticsData?.length > 0 
+    ? Math.round(
+        analyticsData.reduce((acc, current) => acc + (current.attention || 0), 0) / analyticsData.length
+      ) 
+    : 0;
   
   const [timeRange, setTimeRange] = useState<'today' | 'week' | 'month'>('today');
   const lessonTitle = sessionStorage.getItem('currentLessonTitle') || 'Lesson Title';
