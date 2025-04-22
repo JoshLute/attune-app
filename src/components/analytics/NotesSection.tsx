@@ -1,9 +1,9 @@
-
 import React, { useState } from 'react';
-import { FileText, Plus } from 'lucide-react';
+import { FileText, Plus, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 interface Note {
   id: string;
@@ -27,6 +27,8 @@ export function NotesSection() {
   const [newNote, setNewNote] = useState('');
   const { toast } = useToast();
 
+  const MAX_NOTES = 5; // Limit the number of notes
+
   const handleAddNote = () => {
     if (!newNote.trim()) return;
 
@@ -36,11 +38,22 @@ export function NotesSection() {
       timestamp: new Date(),
     };
 
-    setNotes([note, ...notes]);
+    // Keep only the most recent MAX_NOTES
+    const updatedNotes = [note, ...notes].slice(0, MAX_NOTES);
+
+    setNotes(updatedNotes);
     setNewNote('');
     toast({
       title: "Note Added",
       description: "Your note has been saved successfully.",
+    });
+  };
+
+  const handleDeleteNote = (id: string) => {
+    setNotes(notes.filter(note => note.id !== id));
+    toast({
+      title: "Note Deleted",
+      description: "The note has been removed.",
     });
   };
 
@@ -66,19 +79,31 @@ export function NotesSection() {
         Add Note
       </Button>
 
-      <div className="space-y-3">
-        {notes.map((note) => (
-          <div 
-            key={note.id} 
-            className="rounded-xl py-3 px-4 bg-white border border-purple-100 shadow-[2px_2px_5px_rgba(0,0,0,0.05),_-2px_-2px_5px_rgba(255,255,255,0.8)]"
-          >
-            <p className="text-sm text-gray-700 mb-1">{note.content}</p>
-            <p className="text-xs text-gray-500">
-              {note.timestamp.toLocaleDateString()} at {note.timestamp.toLocaleTimeString()}
-            </p>
-          </div>
-        ))}
-      </div>
+      <ScrollArea className="h-[200px] w-full">
+        <div className="space-y-3 pr-4">
+          {notes.map((note) => (
+            <div 
+              key={note.id} 
+              className="rounded-xl py-3 px-4 bg-white border border-purple-100 shadow-[2px_2px_5px_rgba(0,0,0,0.05),_-2px_-2px_5px_rgba(255,255,255,0.8)] flex items-start"
+            >
+              <div className="flex-grow">
+                <p className="text-sm text-gray-700 mb-1">{note.content}</p>
+                <p className="text-xs text-gray-500">
+                  {note.timestamp.toLocaleDateString()} at {note.timestamp.toLocaleTimeString()}
+                </p>
+              </div>
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                className="ml-2 hover:bg-red-50"
+                onClick={() => handleDeleteNote(note.id)}
+              >
+                <Trash2 className="h-4 w-4 text-red-500" />
+              </Button>
+            </div>
+          ))}
+        </div>
+      </ScrollArea>
     </div>
   );
 }
