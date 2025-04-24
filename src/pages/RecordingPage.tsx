@@ -9,6 +9,8 @@ import { RecordingSetup } from "@/components/recording/RecordingSetup";
 import BehaviorSidebar from "@/components/recording/BehaviorSidebar";
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/components/ui/accordion";
 import { useToast } from "@/hooks/use-toast";
+import axios from 'axios';
+
 
 type StudentStatus = 'Attentive' | 'Confused' | 'Inattentive';
 
@@ -19,9 +21,9 @@ interface Student {
 }
 
 const BEHAVIOR_TAGS = [
-  "Visibly Confused",
-  "Verbal Outburst",
-  "Distracting Others"
+  // "Visibly Confused",
+  // "Verbal Outburst",
+  // "Distracting Others"
 ];
 
 const RecordingPage = () => {
@@ -32,18 +34,19 @@ const RecordingPage = () => {
   const [selectedStudent, setSelectedStudent] = useState<string | null>(null);
   const [lessonTitle, setLessonTitle] = useState('');
   const [isRecording, setIsRecording] = useState(false);
-  const [understanding, setUnderstanding] = useState(85);
-  const [attention, setAttention] = useState(90);
+  const [understanding, setUnderstanding] = useState(0);
+  const [confusion, setConfusion] = useState(0);
+  const [control, setControl] = useState(0);
   const [transcript, setTranscript] = useState<string[]>([]);
   const [recordingTime, setRecordingTime] = useState(0);
   const [activeTag, setActiveTag] = useState<string | null>(null);
   const [behaviorEvents, setBehaviorEvents] = useState<{ tag: string, timestamp: number }[]>([]);
   const prevUnderstanding = useRef(understanding);
-  const prevAttention = useRef(attention);
+  const prevAttention = useRef(confusion);
 
   // For animated progress bar
   useEffect(() => { prevUnderstanding.current = understanding }, [understanding]);
-  useEffect(() => { prevAttention.current = attention }, [attention]);
+  useEffect(() => { prevAttention.current = confusion }, [confusion]);
 
   // Handle recording timer
   useEffect(() => {
@@ -77,25 +80,54 @@ const RecordingPage = () => {
     }
   ];
 
-  const handleStartRecording = () => {
+
+  async function sendInferenceRequest() {
+    const data = {
+      value: 'Some data to send',
+    };
+  
+    try {
+      const response = await axios.post('http://localhost:5001/predict', data);
+      let understanding = response.data.understanding;
+      let confusion = response.data.confusion;
+      let control = response.data.control;
+      console.log(understanding, confusion, control)
+      setUnderstanding(understanding);
+      setConfusion(confusion);
+      setControl(control);
+    } catch (error) {
+      console.error('Error making POST request:', error);
+    }
+  };
+
+  async function sendStartRequest() {
+    const data = {
+      status: "start",
+    };
+    let response = await axios.post('http://localhost:5001/recordingStatus', data);
+    console.log(response.data.recording_status);
+  }
+
+  async function sendEndRequest() {
+    const data = {
+      status: "end",
+    };
+    let response = await axios.post('http://localhost:5001/recordingStatus', data);
+    console.log(response.data.recording_status);
+  }
+
+
+  const handleStartRecording = async () => {
     setIsSetupDialogOpen(false);
     setIsRecording(true);
+    await sendStartRequest();
+
     // Store the lesson title in sessionStorage so it persists across pages
     sessionStorage.setItem('currentLessonTitle', lessonTitle);
     
     // Simulate changing metrics over time
-    const understandingInterval = setInterval(() => {
-      setUnderstanding(prev => {
-        const change = Math.random() > 0.5 ? 5 : -5;
-        return Math.max(10, Math.min(100, prev + change));
-      });
-    }, 5000);
-    
-    const attentionInterval = setInterval(() => {
-      setAttention(prev => {
-        const change = Math.random() > 0.5 ? 8 : -8;
-        return Math.max(20, Math.min(100, prev + change));
-      });
+    const inferenceInterval = setInterval(() => {
+      sendInferenceRequest();
     }, 4000);
 
     // Simulate transcript generation
@@ -115,8 +147,7 @@ const RecordingPage = () => {
     }, 3000);
     
     return () => {
-      clearInterval(understandingInterval);
-      clearInterval(attentionInterval);
+      clearInterval(inferenceInterval);
       clearInterval(transcriptInterval);
     };
   };
@@ -234,6 +265,7 @@ const RecordingPage = () => {
                 <h1 className="text-3xl font-bold text-[hsl(var(--attune-purple))]">
                   {lessonTitle || "Lesson"}
                 </h1>
+
                 <Button 
                   variant="default"
                   className="bg-[#9b87f5] hover:bg-[#7E69AB]"
@@ -305,20 +337,34 @@ const RecordingPage = () => {
                     </div>
                     <div>
                       <div className="flex justify-between mb-1">
-                        <span className="font-medium">Attention</span>
-                        <span className="font-medium">{attention}%</span>
+                        <span className="font-medium">Confusion</span>
+                        <span className="font-medium">{confusion}%</span>
                       </div>
                       <div className="relative h-3 bg-gray-200 rounded-full overflow-hidden">
                         <div
                           className="absolute left-0 top-0 h-full rounded-full bg-blue-500 transition-all duration-700"
                           style={{
-                            width: `${attention}%`,
+                            width: `${confusion}%`,
                             transitionProperty: "width"
                           }}
                         />
                       </div>
                     </div>
-                  </div>
+
+                  <div className="flex justify-between mb-1">
+                      <span className="font-medium">Other</span>
+                      <span className="font-medium">{control}%</span>
+                    </div>
+                    <div className="relative h-3 bg-gray-200 rounded-full overflow-hidden">
+                        <div
+                          className="absolute left-0 top-0 h-full rounded-full bg-red-500 transition-all duration-700"
+                          style={{
+                            width: `${control}%`,
+                            transitionProperty: "width"
+                          }}
+                        />
+                      </div>
+                    </div>
                 </div>
                 {/* Transcript (collapsible) */}
                 <div className="bg-[#F1F0FB] p-6 rounded-3xl">
