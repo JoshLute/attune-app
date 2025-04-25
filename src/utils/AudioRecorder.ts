@@ -3,9 +3,6 @@ export class AudioRecorder {
   private stream: MediaStream | null = null;
   private mediaRecorder: MediaRecorder | null = null;
   private audioChunks: Blob[] = [];
-  private startTime: number = 0;
-  private transcriptionInterval: NodeJS.Timeout | null = null;
-  private isTranscribing: boolean = false;
   private transcriptionRetries: number = 0;
   private maxRetries: number = 3;
 
@@ -16,28 +13,31 @@ export class AudioRecorder {
 
   async start() {
     try {
-      console.log('Starting audio recording...');
+      console.log('Starting audio recording with optimal settings...');
       this.stream = await navigator.mediaDevices.getUserMedia({ 
         audio: {
+          sampleRate: 24000, // Required sample rate for OpenAI
+          channelCount: 1,   // Mono audio
           echoCancellation: true,
           noiseSuppression: true,
           autoGainControl: true
         }
       });
 
-      this.mediaRecorder = new MediaRecorder(this.stream);
-      this.startTime = Date.now();
-
-      this.mediaRecorder.ondataavailable = (event) => {
+      this.mediaRecorder = new MediaRecorder(this.stream, {
+        mimeType: 'audio/webm',
+      });
+      
+      this.mediaRecorder.ondataavailable = async (event) => {
         if (event.data.size > 0) {
           this.audioChunks.push(event.data);
           console.log(`Audio chunk captured: ${event.data.size} bytes`);
+          await this.transcribeAudioChunk();
         }
       };
 
-      this.mediaRecorder.start(5000); // Capture in 5-second chunks for more frequent processing
-      this.startTranscriptionInterval();
-      console.log('Audio recording started successfully');
+      this.mediaRecorder.start(5000); // Capture in 5-second chunks
+      console.log('Audio recording started successfully with optimal settings');
 
     } catch (error) {
       console.error('Failed to start recording:', error);
@@ -45,75 +45,26 @@ export class AudioRecorder {
     }
   }
 
-  private startTranscriptionInterval() {
-    // Clear any existing interval
-    if (this.transcriptionInterval) {
-      clearInterval(this.transcriptionInterval);
-    }
-    
-    this.transcriptionInterval = setInterval(() => {
-      if (this.audioChunks.length > 0 && !this.isTranscribing) {
-        this.transcribeCurrentChunks();
-      }
-    }, 5000); // Process more frequently
-  }
+  private async transcribeAudioChunk() {
+    if (this.audioChunks.length === 0) return;
 
-  private async transcribeCurrentChunks() {
-    if (this.isTranscribing || this.audioChunks.length === 0) return;
-    
     try {
-      this.isTranscribing = true;
       const audioBlob = new Blob(this.audioChunks, { type: 'audio/webm' });
       
-      // Make a copy of chunks before clearing to allow retries
-      const currentChunks = [...this.audioChunks];
-      this.audioChunks = []; // Clear the chunks before transcription to avoid duplicates
-      
-      const success = await this.transcribeAudio(audioBlob);
-      
-      // If transcription failed, add chunks back for retry
-      if (!success && this.transcriptionRetries < this.maxRetries) {
-        console.log(`Transcription failed, will retry. Attempt ${this.transcriptionRetries + 1} of ${this.maxRetries}`);
-        this.audioChunks = [...currentChunks, ...this.audioChunks];
-        this.transcriptionRetries++;
-      } else {
-        this.transcriptionRetries = 0; // Reset retries on success
-      }
-    } catch (error) {
-      console.error('Transcription error in interval:', error);
-    } finally {
-      this.isTranscribing = false;
-    }
-  }
-
-  private async transcribeAudio(audioBlob: Blob): Promise<boolean> {
-    try {
-      console.log(`Transcribing audio blob of size: ${audioBlob.size} bytes`);
-      
-      // Skip if blob is too small
-      if (audioBlob.size < 500) {
-        console.log('Audio blob too small, skipping transcription');
-        return true; // Consider this a success to avoid retries for empty audio
+      // Skip if blob is too small (likely no speech)
+      if (audioBlob.size < 1000) {
+        console.log('Audio chunk too small, skipping transcription');
+        this.audioChunks = [];
+        return;
       }
 
-      // Convert blob to base64 with improved chunking
       const buffer = await audioBlob.arrayBuffer();
-      const uint8Array = new Uint8Array(buffer);
-      
-      // Process in smaller chunks to avoid call stack size exceeded
-      let binary = '';
-      const chunkSize = 512; // Reduced chunk size
-      for (let i = 0; i < uint8Array.length; i += chunkSize) {
-        const chunk = uint8Array.slice(i, Math.min(i + chunkSize, uint8Array.length));
-        // Use apply with a temporary array to avoid "Maximum call stack size exceeded"
-        const tempArray = Array.from(chunk);
-        binary += String.fromCharCode.apply(null, tempArray);
-      }
-      
-      const base64Audio = btoa(binary);
-      console.log(`Audio converted to base64, length: ${base64Audio.length}`);
+      const base64Audio = btoa(
+        String.fromCharCode.apply(null, Array.from(new Uint8Array(buffer)))
+      );
 
-      // Call Supabase Edge Function with proper authorization
+      console.log(`Sending audio chunk for transcription, size: ${base64Audio.length}`);
+      
       const response = await fetch(
         'https://objlnvvnifkotxctblgd.functions.supabase.co/transcribe-audio',
         {
@@ -126,58 +77,54 @@ export class AudioRecorder {
       );
 
       if (!response.ok) {
-        const errorText = await response.text();
-        console.error('Transcription API error:', response.status, errorText);
-        return false; // Failed transcription
+        throw new Error(`Transcription failed: ${response.status}`);
       }
 
       const data = await response.json();
-      console.log('Transcription response:', data);
       
+      if (data.error) {
+        throw new Error(data.error);
+      }
+
       if (data.text && data.text.trim().length > 0) {
         console.log('Received transcription:', data.text);
         this.onTranscription(data.text);
-        return true;
-      } else if (data.error) {
-        console.error('Transcription error from API:', data.error);
-        return false;
-      } else {
-        console.log('No text returned from transcription API');
-        return true; // Consider empty result as success (no speech detected)
+        this.transcriptionRetries = 0; // Reset retries on success
       }
+
+      // Clear processed chunks
+      this.audioChunks = [];
 
     } catch (error) {
       console.error('Transcription error:', error);
-      return false;
+      
+      if (this.transcriptionRetries < this.maxRetries) {
+        this.transcriptionRetries++;
+        console.log(`Retrying transcription, attempt ${this.transcriptionRetries} of ${this.maxRetries}`);
+        await this.transcribeAudioChunk();
+      } else {
+        this.onError(error instanceof Error ? error : new Error('Transcription failed'));
+        this.audioChunks = []; // Clear chunks after max retries
+        this.transcriptionRetries = 0;
+      }
     }
   }
 
   stop() {
     console.log('Stopping audio recorder...');
     
-    if (this.transcriptionInterval) {
-      clearInterval(this.transcriptionInterval);
-      this.transcriptionInterval = null;
-      console.log('Transcription interval cleared');
-    }
-
     if (this.mediaRecorder && this.mediaRecorder.state !== 'inactive') {
       this.mediaRecorder.stop();
-      console.log('Media recorder stopped');
     }
     
     if (this.stream) {
       this.stream.getTracks().forEach(track => track.stop());
       this.stream = null;
-      console.log('Audio tracks stopped');
     }
 
     // Process any remaining audio
     if (this.audioChunks.length > 0) {
-      console.log(`Processing ${this.audioChunks.length} remaining audio chunks`);
-      const finalBlob = new Blob(this.audioChunks, { type: 'audio/webm' });
-      this.audioChunks = [];
-      this.transcribeAudio(finalBlob);
+      this.transcribeAudioChunk();
     }
   }
 }

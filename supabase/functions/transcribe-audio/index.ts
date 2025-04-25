@@ -7,51 +7,13 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
-// Process base64 data in chunks to avoid memory issues
-function processBase64(base64Data: string): Uint8Array {
-  try {
-    // Process in smaller chunks to avoid call stack size exceeded
-    const chunkSize = 4096; // Smaller chunk size
-    const binaryChunks: Uint8Array[] = [];
-    let totalLength = 0;
-    
-    for (let i = 0; i < base64Data.length; i += chunkSize) {
-      const chunk = base64Data.substring(i, Math.min(i + chunkSize, base64Data.length));
-      const binaryChunk = atob(chunk);
-      const bytes = new Uint8Array(binaryChunk.length);
-      
-      for (let j = 0; j < binaryChunk.length; j++) {
-        bytes[j] = binaryChunk.charCodeAt(j);
-      }
-      
-      binaryChunks.push(bytes);
-      totalLength += bytes.length;
-    }
-    
-    // Combine all chunks
-    const result = new Uint8Array(totalLength);
-    let offset = 0;
-    
-    for (const chunk of binaryChunks) {
-      result.set(chunk, offset);
-      offset += chunk.length;
-    }
-    
-    return result;
-  } catch (error) {
-    console.error("Error processing base64:", error);
-    throw error;
-  }
-}
-
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders })
+    return new Response(null, { headers: corsHeaders })
   }
 
-  console.log("Received transcription request");
-  
   try {
+    console.log("Received transcription request");
     const { audioData } = await req.json()
     
     if (!audioData) {
@@ -59,14 +21,17 @@ serve(async (req) => {
       throw new Error('No audio data provided')
     }
 
-    console.log(`Received audio data of length: ${audioData.length}`);
+    console.log(`Processing audio data of length: ${audioData.length}`);
     
-    // Convert base64 to binary using the chunked approach
-    const binaryAudio = processBase64(audioData);
-    console.log(`Processed audio data, binary length: ${binaryAudio.length}`);
+    // Convert base64 to binary
+    const binaryString = atob(audioData);
+    const bytes = new Uint8Array(binaryString.length);
+    for (let i = 0; i < binaryString.length; i++) {
+      bytes[i] = binaryString.charCodeAt(i);
+    }
     
-    // Skip processing if audio is too small
-    if (binaryAudio.length < 1000) {
+    // Skip if audio is too small
+    if (bytes.length < 1000) {
       console.log("Audio data too small, likely no speech");
       return new Response(
         JSON.stringify({ text: "" }),
@@ -76,23 +41,22 @@ serve(async (req) => {
     
     // Prepare form data for OpenAI
     const formData = new FormData()
-    const blob = new Blob([binaryAudio], { type: 'audio/webm' })
+    const blob = new Blob([bytes], { type: 'audio/webm' })
     formData.append('file', blob, 'audio.webm')
-    formData.append('model', 'whisper-1')
+    formData.append('model', 'gpt-4o-mini-transcribe') // Using the new model
+    formData.append('response_format', 'json')
 
-    console.log("Sending to OpenAI Whisper API...");
+    console.log("Sending to OpenAI API...");
     
-    // Send to OpenAI Whisper API
-    const apiKey = Deno.env.get('OPENAI_API_KEY');
-    if (!apiKey) {
-      console.error('OPENAI_API_KEY not found in environment variables');
-      throw new Error('OPENAI_API_KEY not found in environment variables');
+    const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY');
+    if (!OPENAI_API_KEY) {
+      throw new Error('OPENAI_API_KEY not configured');
     }
     
     const response = await fetch('https://api.openai.com/v1/audio/transcriptions', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${apiKey}`,
+        'Authorization': `Bearer ${OPENAI_API_KEY}`,
       },
       body: formData,
     })
@@ -112,10 +76,10 @@ serve(async (req) => {
     )
 
   } catch (error) {
-    console.error('Transcription error:', error);
+    console.error('Error:', error);
     return new Response(
       JSON.stringify({ error: error.message }),
-      {
+      { 
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       }

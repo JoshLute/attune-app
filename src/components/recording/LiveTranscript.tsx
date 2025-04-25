@@ -27,7 +27,9 @@ export function LiveTranscript({ transcript, isListening }: LiveTranscriptProps)
           <Accordion type="single" collapsible defaultValue="open">
             <AccordionItem value="open" className="border-none rounded-xl bg-white p-0">
               <AccordionTrigger className="px-3 py-2 rounded-xl focus:outline-none text-base font-medium text-left bg-white hover:bg-gray-100">
-                {transcript.length > 0 ? "Show Transcript" : "Waiting for speech..."}
+                {isListening ? 
+                  transcript.length > 0 ? "Show Transcript" : "Listening for speech..." 
+                  : "Not listening - click Start Recording"}
               </AccordionTrigger>
               <AccordionContent className="px-3 pb-4 pt-1 max-h-60 overflow-y-auto shadow-inner bg-white rounded-b-xl">
                 {transcript.length > 0 ? (
@@ -37,7 +39,9 @@ export function LiveTranscript({ transcript, isListening }: LiveTranscriptProps)
                     </p>
                   ))
                 ) : (
-                  <p className="text-gray-500 italic">Waiting for speech...</p>
+                  <p className="text-gray-500 italic">
+                    {isListening ? "Waiting for speech..." : "Click Start Recording to begin"}
+                  </p>
                 )}
               </AccordionContent>
             </AccordionItem>
