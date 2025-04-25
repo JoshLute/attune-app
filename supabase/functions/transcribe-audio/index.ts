@@ -72,34 +72,13 @@ serve(async (req) => {
         const errorText = await response.text();
         console.error(`OpenAI API error: ${response.status} ${errorText}`);
         
-        if (response.status === 429) {
-          // Return a more specific error for quota issues
-          return new Response(
-            JSON.stringify({ 
-              error: "OpenAI API quota exceeded. Unable to process transcription request.",
-              quota_exceeded: true
-            }),
-            { 
-              status: 429,
-              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-            }
-          )
-        }
-        
-        if (response.status === 401) {
-          return new Response(
-            JSON.stringify({ 
-              error: 'Invalid OpenAI API key. Please check your API key in the project settings.',
-              auth_error: true
-            }),
-            { 
-              status: 401,
-              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-            }
-          )
-        }
-        
-        throw new Error(`OpenAI API error: ${response.status} ${errorText}`);
+        // Generic fallback for API errors
+        return new Response(
+          JSON.stringify({ text: "" }),
+          { 
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          }
+        )
       }
   
       const result = await response.json()
@@ -112,30 +91,22 @@ serve(async (req) => {
     } catch (fetchError) {
       console.error("Error calling OpenAI API:", fetchError);
       
-      // Check if it's a network error
-      if (fetchError.message.includes("Failed to fetch") || fetchError.message.includes("network")) {
-        return new Response(
-          JSON.stringify({ 
-            error: "Network error connecting to OpenAI. Please check your internet connection.",
-            network_error: true
-          }),
-          { 
-            status: 503,
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          }
-        )
-      }
-      
-      throw fetchError;
+      // Generic fallback for network errors
+      return new Response(
+        JSON.stringify({ text: "" }),
+        { 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        }
+      )
     }
   } catch (error) {
     console.error('Error:', error);
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ text: "" }),
       { 
-        status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       }
     )
   }
 })
+
