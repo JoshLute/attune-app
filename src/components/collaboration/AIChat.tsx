@@ -3,6 +3,8 @@ import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Bot, Send } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/components/ui/use-toast';
 
 interface Message {
   id: string;
@@ -21,8 +23,10 @@ export const AIChat = () => {
       timestamp: new Date()
     }
   ]);
+  const [isLoading, setIsLoading] = useState(false);
+  const { toast } = useToast();
 
-  const handleSendMessage = () => {
+  const handleSendMessage = async () => {
     if (!message.trim()) return;
 
     // Add user message
@@ -33,19 +37,35 @@ export const AIChat = () => {
       timestamp: new Date()
     };
 
-    setMessages([...messages, userMessage]);
+    setMessages(prev => [...prev, userMessage]);
     setMessage('');
+    setIsLoading(true);
 
-    // Simulate AI response (in a real app, this would be an API call)
-    setTimeout(() => {
+    try {
+      const { data, error } = await supabase.functions.invoke('ai-chat', {
+        body: { message: message.trim() }
+      });
+
+      if (error) throw error;
+
       const aiMessage: Message = {
         id: (Date.now() + 1).toString(),
-        content: "Based on recent data, I notice a positive trend in engagement during morning sessions. Would you like me to analyze this pattern further?",
+        content: data.response,
         isAI: true,
         timestamp: new Date()
       };
+
       setMessages(prev => [...prev, aiMessage]);
-    }, 1000);
+    } catch (error) {
+      console.error('Error sending message:', error);
+      toast({
+        title: "Error",
+        description: "Failed to get AI response. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -82,8 +102,13 @@ export const AIChat = () => {
             onChange={(e) => setMessage(e.target.value)}
             placeholder="Ask about student trends, behavior patterns, or suggestions..."
             className="min-h-[60px]"
+            disabled={isLoading}
           />
-          <Button onClick={handleSendMessage} className="px-4">
+          <Button 
+            onClick={handleSendMessage} 
+            className="px-4"
+            disabled={isLoading}
+          >
             <Send className="h-4 w-4" />
           </Button>
         </div>
