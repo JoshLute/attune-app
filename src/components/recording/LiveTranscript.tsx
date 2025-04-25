@@ -1,4 +1,3 @@
-
 import React, { useEffect, useRef } from 'react';
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/components/ui/accordion";
 
@@ -10,135 +9,81 @@ interface LiveTranscriptProps {
 
 export function LiveTranscript({ transcript, isListening, onMetricsUpdate }: LiveTranscriptProps) {
   const audioLevelRef = useRef<HTMLDivElement>(null);
-  const metricsIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const animationFrameRef = useRef<number | null>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
   const analyserRef = useRef<AnalyserNode | null>(null);
   const sourceRef = useRef<MediaStreamAudioSourceNode | null>(null);
-  const animationFrameRef = useRef<number | null>(null);
-  
-  // Clean up all resources
-  const cleanupResources = () => {
-    console.log('LiveTranscript: Cleaning up all audio resources');
-    
-    // Cancel animation frame
-    if (animationFrameRef.current) {
-      cancelAnimationFrame(animationFrameRef.current);
-      animationFrameRef.current = null;
-    }
-    
-    // Clear metrics interval
-    if (metricsIntervalRef.current) {
-      clearInterval(metricsIntervalRef.current);
-      metricsIntervalRef.current = null;
-    }
-    
-    // Disconnect and close audio context
-    if (sourceRef.current) {
-      sourceRef.current.disconnect();
-      sourceRef.current = null;
-    }
-    
-    if (analyserRef.current) {
-      analyserRef.current.disconnect();
-      analyserRef.current = null;
-    }
-    
-    if (audioContextRef.current && audioContextRef.current.state !== 'closed') {
-      audioContextRef.current.close().catch(console.error);
-      audioContextRef.current = null;
-    }
-  };
-  
+
   useEffect(() => {
+    const cleanup = () => {
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
+        animationFrameRef.current = null;
+      }
+      
+      if (sourceRef.current) {
+        sourceRef.current.disconnect();
+        sourceRef.current = null;
+      }
+      
+      if (analyserRef.current) {
+        analyserRef.current.disconnect();
+        analyserRef.current = null;
+      }
+      
+      if (audioContextRef.current && audioContextRef.current.state !== 'closed') {
+        audioContextRef.current.close();
+        audioContextRef.current = null;
+      }
+    };
+
     if (!isListening) {
-      console.log('LiveTranscript: Not listening, cleaning up resources');
-      cleanupResources();
+      cleanup();
       return;
     }
-    
-    console.log('LiveTranscript: Setting up audio context and metrics');
-    
-    // Clean up any existing resources first
-    cleanupResources();
-    
-    // Create new audio context and analyzer
-    try {
-      audioContextRef.current = new AudioContext();
-      analyserRef.current = audioContextRef.current.createAnalyser();
-      analyserRef.current.fftSize = 256;
-      
-      const dataArray = new Uint8Array(analyserRef.current.frequencyBinCount);
-      
-      navigator.mediaDevices.getUserMedia({ audio: true })
-        .then(stream => {
-          console.log('LiveTranscript: Audio stream connected');
-          if (audioContextRef.current && analyserRef.current) {
-            sourceRef.current = audioContextRef.current.createMediaStreamSource(stream);
-            sourceRef.current.connect(analyserRef.current);
-            
-            // Single metrics update function
-            const updateMetrics = () => {
-              if (!analyserRef.current) return;
-              
-              analyserRef.current.getByteFrequencyData(dataArray);
-              const average = dataArray.reduce((acc, val) => acc + val, 0) / dataArray.length;
-              const level = Math.min(100, (average / 128) * 100);
-              
-              if (audioLevelRef.current) {
-                audioLevelRef.current.style.width = `${level}%`;
-              }
-              
-              if (onMetricsUpdate) {
-                const attention = Math.max(20, Math.min(100, level + Math.random() * 20));
-                const understanding = Math.max(20, Math.min(100, level + Math.random() * 20));
-                console.log('LiveTranscript: Updating metrics -', { attention, understanding });
-                onMetricsUpdate(attention, understanding);
-              }
-            };
-            
-            // Clear any existing interval
-            if (metricsIntervalRef.current) {
-              console.log('LiveTranscript: Clearing existing metrics interval');
-              clearInterval(metricsIntervalRef.current);
-            }
-            
-            // Set up new 10-second interval for metrics updates
-            console.log('LiveTranscript: Setting up new metrics interval (10s)');
-            metricsIntervalRef.current = setInterval(updateMetrics, 10000);
-            
-            // Run the first update immediately
-            updateMetrics();
-            
-            // Update audio level visualization more frequently but separately
-            const updateAudioLevel = () => {
-              if (!analyserRef.current) return;
-              
-              analyserRef.current.getByteFrequencyData(dataArray);
-              const average = dataArray.reduce((acc, val) => acc + val, 0) / dataArray.length;
-              const level = Math.min(100, (average / 128) * 100);
-              
-              if (audioLevelRef.current) {
-                audioLevelRef.current.style.width = `${level}%`;
-              }
-              
-              animationFrameRef.current = requestAnimationFrame(updateAudioLevel);
-            };
-            
-            // Start the animation frame loop
-            updateAudioLevel();
+
+    const setupAudioContext = async () => {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        
+        audioContextRef.current = new AudioContext();
+        analyserRef.current = audioContextRef.current.createAnalyser();
+        analyserRef.current.fftSize = 256;
+        
+        sourceRef.current = audioContextRef.current.createMediaStreamSource(stream);
+        sourceRef.current.connect(analyserRef.current);
+
+        const dataArray = new Uint8Array(analyserRef.current.frequencyBinCount);
+        
+        const updateMetrics = () => {
+          if (!analyserRef.current || !isListening) return;
+          
+          analyserRef.current.getByteFrequencyData(dataArray);
+          const average = dataArray.reduce((acc, val) => acc + val, 0) / dataArray.length;
+          const level = Math.min(100, (average / 128) * 100);
+          
+          if (audioLevelRef.current) {
+            audioLevelRef.current.style.width = `${level}%`;
           }
-        })
-        .catch(err => {
-          console.error('Audio level monitoring error:', err);
-          cleanupResources();
-        });
-    } catch (err) {
-      console.error('Failed to initialize audio context:', err);
-      cleanupResources();
-    }
-      
-    // Cleanup when component unmounts or isListening changes
-    return cleanupResources;
+
+          // Simple metrics based on audio level - no random variations
+          if (onMetricsUpdate && level > 0) {
+            const attention = Math.min(100, level + 30);  // Boost slightly for UI
+            const understanding = Math.min(100, level + 20);
+            onMetricsUpdate(attention, understanding);
+          }
+          
+          animationFrameRef.current = requestAnimationFrame(updateMetrics);
+        };
+        
+        updateMetrics();
+      } catch (err) {
+        console.error('Audio monitoring setup error:', err);
+      }
+    };
+
+    setupAudioContext();
+    return cleanup;
   }, [isListening, onMetricsUpdate]);
 
   return (
