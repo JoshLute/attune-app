@@ -4,8 +4,8 @@ import {
   Carousel,
   CarouselContent,
   CarouselItem,
-  CarouselNext,
-  CarouselPrevious
+  CarouselPrevious,
+  CarouselNext
 } from "@/components/ui/carousel";
 import {
   Card,
@@ -92,14 +92,14 @@ export const PartsToReviewSection: React.FC<PartsToReviewSectionProps> = ({
           ) : (
             <Carousel
               opts={{
+                axis: "y", 
+                slidesToScroll: 1,
                 dragFree: false,
-                align: "start",
-                containScroll: "trimSnaps",
-                axis: "y"
+                containScroll: "trimSnaps"
               }}
-              className="w-full max-w-xl mx-auto relative h-[300px] overflow-hidden"
+              className="w-full max-w-xl mx-auto relative h-[340px] overflow-hidden"
             >
-              <CarouselContent className="-mt-4">
+              <CarouselContent className="-mt-4 flex flex-col">
                 {confusionPeriods.map((item, idx) => {
                   const status = getStatus(item.attention, item.understanding);
                   return (
@@ -131,9 +131,9 @@ export const PartsToReviewSection: React.FC<PartsToReviewSectionProps> = ({
                 })}
               </CarouselContent>
               {confusionPeriods.length > 3 && (
-                <div className="flex flex-row justify-between mt-4 px-6">
-                  <CarouselPrevious />
-                  <CarouselNext />
+                <div className="absolute right-0 top-1/2 -translate-y-1/2 flex flex-col gap-2 px-2">
+                  <CarouselPrevious className="rotate-90" />
+                  <CarouselNext className="rotate-90" />
                 </div>
               )}
             </Carousel>
