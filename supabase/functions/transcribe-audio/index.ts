@@ -11,7 +11,7 @@ const corsHeaders = {
 function processBase64(base64Data: string): Uint8Array {
   try {
     // Process in smaller chunks to avoid call stack size exceeded
-    const chunkSize = 8192;
+    const chunkSize = 4096; // Smaller chunk size
     const binaryChunks: Uint8Array[] = [];
     let totalLength = 0;
     
@@ -65,6 +65,15 @@ serve(async (req) => {
     const binaryAudio = processBase64(audioData);
     console.log(`Processed audio data, binary length: ${binaryAudio.length}`);
     
+    // Skip processing if audio is too small
+    if (binaryAudio.length < 1000) {
+      console.log("Audio data too small, likely no speech");
+      return new Response(
+        JSON.stringify({ text: "" }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+    
     // Prepare form data for OpenAI
     const formData = new FormData()
     const blob = new Blob([binaryAudio], { type: 'audio/webm' })
@@ -76,6 +85,7 @@ serve(async (req) => {
     // Send to OpenAI Whisper API
     const apiKey = Deno.env.get('OPENAI_API_KEY');
     if (!apiKey) {
+      console.error('OPENAI_API_KEY not found in environment variables');
       throw new Error('OPENAI_API_KEY not found in environment variables');
     }
     

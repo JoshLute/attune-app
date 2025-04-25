@@ -1,12 +1,24 @@
 
-import React from 'react';
+import React, { useEffect } from 'react';
 
 interface LiveMetricsProps {
   understanding: number;
   attention: number;
+  onMetricsUpdate?: (attention: number, understanding: number) => void;
 }
 
-export function LiveMetrics({ understanding = 0, attention = 0 }: LiveMetricsProps) {
+export function LiveMetrics({ 
+  understanding = 0, 
+  attention = 0, 
+  onMetricsUpdate 
+}: LiveMetricsProps) {
+  // Send metrics to parent component for tracking when they change
+  useEffect(() => {
+    if (onMetricsUpdate) {
+      onMetricsUpdate(attention, understanding);
+    }
+  }, [attention, understanding, onMetricsUpdate]);
+
   return (
     <div className="bg-[#F1F0FB] p-6 rounded-3xl space-y-4">
       <h3 className="text-xl font-semibold text-[hsl(var(--attune-purple))]">Live Metrics</h3>
