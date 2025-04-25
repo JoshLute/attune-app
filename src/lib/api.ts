@@ -143,7 +143,7 @@ export async function fetchSessionEvents(sessionId: string): Promise<SessionEven
     const { data, error } = await supabase
       .rpc('get_session_timeline', { 
         p_session_id: sessionId,
-        p_limit: 1000, // Adjust limit as needed
+        p_limit: 1000,
         p_offset: 0 
       });
 
@@ -160,8 +160,8 @@ export async function fetchSessionEvents(sessionId: string): Promise<SessionEven
       session_id: sessionId,
       timestamp: event.event_timestamp,
       event_type: event.event_content ? 'transcript' : 'attention',
-      content: event.event_content,
-      value: event.event_content ? null : event.event_attention_score
+      content: event.event_content || null,
+      value: event.event_attention_score || event.event_understanding_score || null
     }));
   } catch (error) {
     console.error('Error in fetchSessionEvents:', error);

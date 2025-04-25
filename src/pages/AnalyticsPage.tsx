@@ -35,37 +35,21 @@ const AnalyticsPage = () => {
   // Find the selected session
   const selectedSession = sessions.find(session => session.id === selectedLessonId);
 
-  // Format events for the chart
-  const analyticsData = events
-    .filter(event => event.event_type === 'transcript')
-    .map(event => {
-      // Find corresponding attention and understanding events with the nearest timestamp
-      const timestamp = event.timestamp;
-      const attentionEvent = events.find(e => 
-        e.event_type === 'attention' && 
-        Math.abs(new Date(e.timestamp).getTime() - new Date(timestamp).getTime()) < 5000
-      );
-      
-      const understandingEvent = events.find(e => 
-        e.event_type === 'understanding' && 
-        Math.abs(new Date(e.timestamp).getTime() - new Date(timestamp).getTime()) < 5000
-      );
-
-      return {
-        timestamp: new Date(timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-        attention: attentionEvent?.value || 0,
-        understanding: understandingEvent?.value || 0,
-        transcript: event.content || ""
-      };
+  // Format events for the chart by directly using timeline data
+  const analyticsData = events.map(event => {
+    const timestamp = new Date(event.timestamp).toLocaleTimeString([], { 
+      hour: '2-digit', 
+      minute: '2-digit' 
     });
 
-  const handleDownloadReport = () => {
-    toast({
-      title: "Report Downloaded",
-      description: "Your lesson summary report has been downloaded",
-    });
-  };
-  
+    return {
+      timestamp,
+      attention: event.event_type === 'attention' ? event.value || 0 : null,
+      understanding: event.event_type === 'understanding' ? event.value || 0 : null,
+      transcript: event.content || ""
+    };
+  }).filter(Boolean);
+
   if (isLoading || detailsLoading) {
     return <div className="flex justify-center items-center h-screen">Loading...</div>;
   }
@@ -93,7 +77,7 @@ const AnalyticsPage = () => {
   // Find session start and end times
   const sessionStart = events.length > 0 ? events[0].timestamp : null;
   const sessionEnd = events.length > 0 ? events[events.length - 1].timestamp : null;
-  
+
   return (
     <div className="flex h-screen bg-white">
       <AttuneSidebar />
