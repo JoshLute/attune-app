@@ -10,6 +10,7 @@ import BehaviorSidebar from "@/components/recording/BehaviorSidebar";
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/components/ui/accordion";
 import { useToast } from "@/hooks/use-toast";
 import { saveSessionData, generateSessionInsights } from "@/lib/api";
+import { useSaveSession } from "@/components/recording/SaveSessionHandler";
 
 type StudentStatus = 'Attentive' | 'Confused' | 'Inattentive';
 
@@ -177,51 +178,20 @@ const RecordingPage = () => {
     }
   };
 
-  const handleEndSession = async () => {
+  const { saveSession } = useSaveSession();
+  
+  const handleEndSession = () => {
     if (isSaving) return;
     setIsSaving(true);
     
-    toast({
-      title: "Saving session",
-      description: "Please wait while we save your session data...",
-      duration: 5000,
-    });
-    
-    try {
-      // Save the session data to Supabase
-      const { session, success } = await saveSessionData(
-        lessonTitle,
-        transcript,
-        attentionHistory,
-        understandingHistory
-      );
-      
-      if (success && session.id) {
-        // Generate insights for the session
-        await generateSessionInsights(session.id);
-        
-        toast({
-          title: "Session saved",
-          description: "Your session has been saved. Redirecting to analytics...",
-          duration: 3000,
-        });
-        
-        // Navigate to the analytics page with the session ID
-        navigate(`/analytics?lesson=${session.id}`);
-      } else {
-        throw new Error("Failed to save session");
-      }
-    } catch (error) {
-      console.error("Error ending session:", error);
-      toast({
-        title: "Error",
-        description: "There was an error saving your session. Please try again.",
-        duration: 5000,
-      });
-      navigate("/analytics");
-    } finally {
+    saveSession({
+      lessonTitle,
+      transcript,
+      attentionHistory,
+      understandingHistory,
+    }).finally(() => {
       setIsSaving(false);
-    }
+    });
   };
 
   const activeStudent = students.find(s => s.id === selectedStudent);
