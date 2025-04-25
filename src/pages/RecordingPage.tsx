@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { AttuneSidebar } from "@/components/sidebar/AttuneSidebar";
 import { Button } from "@/components/ui/button";
@@ -154,9 +155,12 @@ const RecordingPage = () => {
       transcriptCount: transcript.length
     });
     
+    // Updated to provide empty arrays for attention and understanding history
     saveSession({
       lessonTitle,
-      transcript
+      transcript,
+      attentionHistory: [], // Provide empty array 
+      understandingHistory: [] // Provide empty array
     }).finally(() => {
       setIsSaving(false);
     });

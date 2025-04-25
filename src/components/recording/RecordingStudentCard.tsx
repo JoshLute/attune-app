@@ -10,9 +10,9 @@ interface Student {
 
 interface RecordingStudentCardProps {
   student: Student;
-  understanding: number;
+  understanding?: number;
   recordingTime: number;
-  onBehaviorClick: (tag: string) => void;
+  onBehaviorClick?: (tag: string) => void;
 }
 
 const BEHAVIOR_TAGS = [
@@ -23,9 +23,9 @@ const BEHAVIOR_TAGS = [
 
 export function RecordingStudentCard({ 
   student, 
-  understanding, 
+  understanding = 50, // Default value 
   recordingTime,
-  onBehaviorClick 
+  onBehaviorClick = () => {} // Default empty function
 }: RecordingStudentCardProps) {
   return (
     <div className="rounded-3xl bg-[#F1F0FB] p-6 mb-4 flex flex-col space-y-4">
@@ -54,18 +54,20 @@ export function RecordingStudentCard({
         </div>
       </div>
       
-      <div className="flex gap-3">
-        {BEHAVIOR_TAGS.map(tag => (
-          <button
-            type="button"
-            key={tag}
-            onClick={() => onBehaviorClick(tag)}
-            className="transition-transform duration-200 flex-1 px-4 py-3 rounded-full bg-[hsl(var(--attune-purple))] text-white font-semibold text-base shadow-md hover:scale-105 active:scale-100 focus:outline-none"
-          >
-            {tag}
-          </button>
-        ))}
-      </div>
+      {onBehaviorClick !== undefined && (
+        <div className="flex gap-3">
+          {BEHAVIOR_TAGS.map(tag => (
+            <button
+              type="button"
+              key={tag}
+              onClick={() => onBehaviorClick(tag)}
+              className="transition-transform duration-200 flex-1 px-4 py-3 rounded-full bg-[hsl(var(--attune-purple))] text-white font-semibold text-base shadow-md hover:scale-105 active:scale-100 focus:outline-none"
+            >
+              {tag}
+            </button>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

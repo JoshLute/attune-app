@@ -7,8 +7,8 @@ import { useSessionsContext } from "@/contexts/SessionsContext";
 interface SaveSessionHandlerProps {
   lessonTitle: string;
   transcript: string[];
-  attentionHistory: number[];
-  understandingHistory: number[];
+  attentionHistory?: number[];
+  understandingHistory?: number[];
 }
 
 // Helper function to backup data to localStorage
@@ -54,8 +54,8 @@ export const useSaveSession = () => {
   const saveSession = async ({
     lessonTitle,
     transcript,
-    attentionHistory,
-    understandingHistory,
+    attentionHistory = [],
+    understandingHistory = [],
   }: SaveSessionHandlerProps) => {
     try {
       // Debug information about what we're trying to save
