@@ -1,7 +1,7 @@
-
 import { toast } from "@/components/ui/sonner";
 import { saveSessionData, generateSessionInsights } from "@/lib/api";
 import { useNavigate } from "react-router-dom";
+import { useSessionsContext } from "@/contexts/SessionsContext";
 
 interface SaveSessionHandlerProps {
   lessonTitle: string;
@@ -12,6 +12,7 @@ interface SaveSessionHandlerProps {
 
 export const useSaveSession = () => {
   const navigate = useNavigate();
+  const { refetchSessions } = useSessionsContext();
 
   const saveSession = async ({
     lessonTitle,
@@ -20,6 +21,7 @@ export const useSaveSession = () => {
     understandingHistory,
   }: SaveSessionHandlerProps) => {
     try {
+      console.log('Starting session save...', { lessonTitle });
       toast.loading("Saving your session...", { id: "save-session" });
 
       const { session, success } = await saveSessionData(
@@ -33,8 +35,15 @@ export const useSaveSession = () => {
         throw new Error("Failed to save session data");
       }
 
+      console.log('Session saved successfully:', session);
+
       // Generate insights for the session
       await generateSessionInsights(session.id);
+      console.log('Insights generated for session:', session.id);
+
+      // Refetch sessions to update the UI
+      await refetchSessions();
+      console.log('Sessions refetched');
 
       toast.success("Session saved successfully!", { id: "save-session" });
 
