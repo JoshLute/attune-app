@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { AttuneSidebar } from "@/components/sidebar/AttuneSidebar";
 import { Button } from "@/components/ui/button";
@@ -30,9 +31,6 @@ const RecordingPage = () => {
   const [isListening, setIsListening] = useState(false);
   const [audioRecorder, setAudioRecorder] = useState<AudioRecorder | null>(null);
   
-  // Remove unnecessary interval refs
-  const metricsUpdateIntervalRef = useRef<NodeJS.Timeout | null>(null);
-
   // Check for backup on load
   useEffect(() => {
     const backup = getBackupSessionData();
@@ -80,28 +78,22 @@ const RecordingPage = () => {
     };
   }, [isRecording]);
 
-  // Save metrics to history arrays
-  const updateMetricsHistory = useCallback(() => {
-    console.log('RecordingPage: Saving metrics to history:', { attention, understanding });
-    setAttentionHistory(prev => [...prev, attention]);
-    setUnderstandingHistory(prev => [...prev, understanding]);
-    
-    // Save to window for debugging
-    (window as any).attentionHistory = [...attentionHistory, attention];
-    (window as any).understandingHistory = [...understandingHistory, understanding];
-    (window as any).transcriptHistory = transcript;
-  }, [attention, understanding, attentionHistory, understandingHistory, transcript]);
-
-  // Update metrics handling to use synchronized 10-second intervals
+  // Single metrics update handler - now receives metrics only from LiveTranscript
   const handleMetricsUpdate = useCallback((newAttention: number, newUnderstanding: number) => {
     console.log('RecordingPage: Received metrics update:', { newAttention, newUnderstanding });
+    
+    // Update current state
     setAttention(newAttention);
     setUnderstanding(newUnderstanding);
     
-    // Save metrics to history arrays
+    // Save to history arrays
     setAttentionHistory(prev => [...prev, newAttention]);
     setUnderstandingHistory(prev => [...prev, newUnderstanding]);
-  }, []);
+    
+    // Save to window for debugging
+    (window as any).attentionHistory = [...attentionHistory, newAttention];
+    (window as any).understandingHistory = [...understandingHistory, newUnderstanding];
+  }, [attentionHistory, understandingHistory]);
 
   const students = [
     {
@@ -180,16 +172,6 @@ const RecordingPage = () => {
       });
       setIsListening(false);
     }
-
-    // Clear any existing intervals
-    if (metricsUpdateIntervalRef.current) {
-      clearInterval(metricsUpdateIntervalRef.current);
-    }
-    
-    // Set up interval to save metrics to history
-    metricsUpdateIntervalRef.current = setInterval(() => {
-      updateMetricsHistory();
-    }, 10000);
   };
 
   const handleQuickBehavior = (tag: string) => {
@@ -211,17 +193,12 @@ const RecordingPage = () => {
     if (isSaving) return;
     setIsSaving(true);
     
-    if (metricsUpdateIntervalRef.current) clearInterval(metricsUpdateIntervalRef.current);
-    
     if (audioRecorder) {
       console.log("Stopping audio recorder...");
       audioRecorder.stop();
       setAudioRecorder(null);
       setIsListening(false);
     }
-    
-    // Ensure we have the latest metrics saved in history
-    updateMetricsHistory();
     
     // Log what we're about to save
     console.log("Preparing to save session with:", {
