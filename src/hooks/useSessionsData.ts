@@ -1,6 +1,7 @@
 
 import { useQuery } from '@tanstack/react-query';
 import { fetchSessions, fetchSessionEvents, fetchAIInsights } from '@/lib/api';
+import { Session, SessionEvent, AIInsight } from '@/types/analytics';
 
 export function useSessions() {
   const { data: sessions = [], isLoading, error } = useQuery({

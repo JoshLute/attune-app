@@ -20,7 +20,11 @@ export async function fetchSessionEvents(sessionId: string): Promise<SessionEven
     .order('timestamp', { ascending: true });
 
   if (error) throw error;
-  return data || [];
+  // Cast the event_type to the correct type
+  return (data || []).map(event => ({
+    ...event,
+    event_type: event.event_type as 'transcript' | 'attention' | 'understanding'
+  }));
 }
 
 export async function fetchAIInsights(sessionId: string, type?: string): Promise<AIInsight[]> {
@@ -36,5 +40,9 @@ export async function fetchAIInsights(sessionId: string, type?: string): Promise
   const { data, error } = await query.order('created_at', { ascending: true });
 
   if (error) throw error;
-  return data || [];
+  // Cast the type to the correct type
+  return (data || []).map(insight => ({
+    ...insight,
+    type: insight.type as 'summary' | 'review_point' | 'suggestion'
+  }));
 }

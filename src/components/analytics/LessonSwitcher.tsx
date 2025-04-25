@@ -1,7 +1,7 @@
 
 import React from "react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useSessions } from "@/contexts/SessionsContext";
+import { useSessionsContext } from "@/contexts/SessionsContext";
 
 interface LessonSwitcherProps {
   value: string;
@@ -12,7 +12,7 @@ export const LessonSwitcher: React.FC<LessonSwitcherProps> = ({
   value,
   onChange,
 }) => {
-  const { sessions } = useSessions();
+  const { sessions } = useSessionsContext();
   
   return (
     <div className="inline-block">
@@ -23,7 +23,7 @@ export const LessonSwitcher: React.FC<LessonSwitcherProps> = ({
         <SelectContent>
           {sessions.map((session) => (
             <SelectItem key={session.id} value={session.id}>
-              {session.name}
+              {session.title}
             </SelectItem>
           ))}
         </SelectContent>
