@@ -3,8 +3,9 @@ export class AudioRecorder {
   private stream: MediaStream | null = null;
   private mediaRecorder: MediaRecorder | null = null;
   private audioChunks: Blob[] = [];
-  private transcriptionRetries: number = 0;
-  private maxRetries: number = 3;
+  private retryTimeout: NodeJS.Timeout | null = null;
+  private maxRetries = 3;
+  private retryDelay = 2000; // 2 seconds between retries
 
   constructor(
     private onTranscription: (text: string) => void,
@@ -32,7 +33,7 @@ export class AudioRecorder {
         if (event.data.size > 0) {
           this.audioChunks.push(event.data);
           console.log(`Audio chunk captured: ${event.data.size} bytes`);
-          await this.transcribeAudioChunk();
+          await this.transcribeAudioWithRetry(0);
         }
       };
 
@@ -45,7 +46,7 @@ export class AudioRecorder {
     }
   }
 
-  private async transcribeAudioChunk() {
+  private async transcribeAudioWithRetry(retryCount: number) {
     if (this.audioChunks.length === 0) return;
 
     try {
@@ -63,9 +64,8 @@ export class AudioRecorder {
         String.fromCharCode(...new Uint8Array(buffer))
       );
 
-      console.log(`Sending audio chunk for transcription, size: ${base64Audio.length}`);
+      console.log(`Sending audio chunk for transcription, attempt ${retryCount + 1} of ${this.maxRetries + 1}`);
       
-      // Use the full URL for the Supabase Edge Function
       const response = await fetch(
         'https://objlnvvnifkotxctblgd.functions.supabase.co/transcribe-audio',
         {
@@ -95,31 +95,43 @@ export class AudioRecorder {
       if (data.text && data.text.trim().length > 0) {
         console.log('Received transcription:', data.text);
         this.onTranscription(data.text);
-        this.transcriptionRetries = 0; // Reset retries on success
       } else {
         console.log('No transcription text received');
       }
 
-      // Clear processed chunks
+      // Clear processed chunks on success
       this.audioChunks = [];
 
     } catch (error) {
       console.error('Transcription error:', error);
       
-      if (this.transcriptionRetries < this.maxRetries) {
-        this.transcriptionRetries++;
-        console.log(`Retrying transcription, attempt ${this.transcriptionRetries} of ${this.maxRetries}`);
-        await this.transcribeAudioChunk();
+      if (retryCount < this.maxRetries) {
+        console.log(`Retrying transcription in ${this.retryDelay}ms...`);
+        
+        // Clear any existing retry timeout
+        if (this.retryTimeout) {
+          clearTimeout(this.retryTimeout);
+        }
+        
+        // Schedule retry with delay
+        this.retryTimeout = setTimeout(() => {
+          this.transcribeAudioWithRetry(retryCount + 1);
+        }, this.retryDelay);
       } else {
+        console.error(`Failed after ${this.maxRetries + 1} attempts, notifying user`);
         this.onError(error instanceof Error ? error : new Error('Transcription failed'));
         this.audioChunks = []; // Clear chunks after max retries
-        this.transcriptionRetries = 0;
       }
     }
   }
 
   stop() {
     console.log('Stopping audio recorder...');
+    
+    if (this.retryTimeout) {
+      clearTimeout(this.retryTimeout);
+      this.retryTimeout = null;
+    }
     
     if (this.mediaRecorder && this.mediaRecorder.state !== 'inactive') {
       this.mediaRecorder.stop();
@@ -132,7 +144,7 @@ export class AudioRecorder {
 
     // Process any remaining audio
     if (this.audioChunks.length > 0) {
-      this.transcribeAudioChunk();
+      this.transcribeAudioWithRetry(0);
     }
   }
 }
