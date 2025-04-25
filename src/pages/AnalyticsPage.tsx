@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { AttuneSidebar } from '@/components/sidebar/AttuneSidebar';
 import { Button } from '@/components/ui/button';
@@ -49,6 +50,14 @@ const AnalyticsPage = () => {
       transcript: event.content || ""
     };
   }).filter(Boolean);
+
+  // Add the handleDownloadReport function back
+  const handleDownloadReport = () => {
+    toast({
+      title: "Report Downloaded",
+      description: "Your lesson summary report has been downloaded",
+    });
+  };
 
   if (isLoading || detailsLoading) {
     return <div className="flex justify-center items-center h-screen">Loading...</div>;
