@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { AttuneSidebar } from '@/components/sidebar/AttuneSidebar';
 import { Button } from '@/components/ui/button';
@@ -42,7 +43,7 @@ const AnalyticsPage = () => {
       minute: '2-digit' 
     });
 
-    // Find existing entry for this timestamp or create new one
+    // Find or create entry for this timestamp
     let entry = acc.find(item => item.timestamp === timestamp);
     if (!entry) {
       entry = {
@@ -54,14 +55,17 @@ const AnalyticsPage = () => {
       acc.push(entry);
     }
 
-    // Update the entry based on event type
-    if (event.event_type === 'attention') {
+    // Update the entry based on event type, preserving existing values
+    if (event.event_type === 'attention' && event.value !== null) {
       entry.attention = event.value;
-    } else if (event.event_type === 'understanding') {
+    } else if (event.event_type === 'understanding' && event.value !== null) {
       entry.understanding = event.value;
     } else if (event.event_type === 'transcript') {
       entry.transcript = event.content || "";
     }
+
+    console.log(`Processing event: ${event.event_type}, value: ${event.value}, timestamp: ${timestamp}`);
+    console.log('Current entry:', entry);
 
     return acc;
   }, []);
