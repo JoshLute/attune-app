@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { AttuneSidebar } from '@/components/sidebar/AttuneSidebar';
 import { Button } from '@/components/ui/button';
@@ -36,48 +35,29 @@ const AnalyticsPage = () => {
   // Find the selected session
   const selectedSession = sessions.find(session => session.id === selectedLessonId);
 
-  // Format events for the chart by combining events at same timestamp
-  const analyticsData = events.reduce((acc: any[], event) => {
-    const timestamp = new Date(event.timestamp).toLocaleTimeString([], { 
-      hour: '2-digit', 
-      minute: '2-digit' 
-    });
+  // Format events for the chart
+  const analyticsData = events
+    .filter(event => event.event_type === 'transcript')
+    .map(event => {
+      // Find corresponding attention and understanding events with the nearest timestamp
+      const timestamp = event.timestamp;
+      const attentionEvent = events.find(e => 
+        e.event_type === 'attention' && 
+        Math.abs(new Date(e.timestamp).getTime() - new Date(timestamp).getTime()) < 5000
+      );
+      
+      const understandingEvent = events.find(e => 
+        e.event_type === 'understanding' && 
+        Math.abs(new Date(e.timestamp).getTime() - new Date(timestamp).getTime()) < 5000
+      );
 
-    // Find or create entry for this timestamp
-    let entry = acc.find(item => item.timestamp === timestamp);
-    if (!entry) {
-      entry = {
-        timestamp,
-        attention: null,
-        understanding: null,
-        transcript: ""
+      return {
+        timestamp: new Date(timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        attention: attentionEvent?.value || 0,
+        understanding: understandingEvent?.value || 0,
+        transcript: event.content || ""
       };
-      acc.push(entry);
-    }
-
-    // Update the entry based on event type, preserving existing values
-    if (event.event_type === 'attention' && event.value !== null) {
-      entry.attention = event.value;
-    } else if (event.event_type === 'understanding' && event.value !== null) {
-      entry.understanding = event.value;
-    } else if (event.event_type === 'transcript') {
-      entry.transcript = event.content || "";
-    }
-
-    console.log(`Processing event: ${event.event_type}, value: ${event.value}, timestamp: ${timestamp}`);
-    console.log('Current entry:', entry);
-
-    return acc;
-  }, []);
-
-  // Sort analyticsData by timestamp
-  analyticsData.sort((a, b) => {
-    const timeA = new Date(`1970/01/01 ${a.timestamp}`).getTime();
-    const timeB = new Date(`1970/01/01 ${b.timestamp}`).getTime();
-    return timeA - timeB;
-  });
-
-  console.log('Final analytics data:', analyticsData);
+    });
 
   const handleDownloadReport = () => {
     toast({
@@ -85,7 +65,7 @@ const AnalyticsPage = () => {
       description: "Your lesson summary report has been downloaded",
     });
   };
-
+  
   if (isLoading || detailsLoading) {
     return <div className="flex justify-center items-center h-screen">Loading...</div>;
   }
@@ -113,7 +93,7 @@ const AnalyticsPage = () => {
   // Find session start and end times
   const sessionStart = events.length > 0 ? events[0].timestamp : null;
   const sessionEnd = events.length > 0 ? events[events.length - 1].timestamp : null;
-
+  
   return (
     <div className="flex h-screen bg-white">
       <AttuneSidebar />

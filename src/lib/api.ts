@@ -20,200 +20,19 @@ export async function fetchSessions(): Promise<Session[]> {
   }));
 }
 
-export async function saveSessionData(
-  title: string,
-  transcripts: string[], 
-  attentionValues: number[], 
-  understandingValues: number[]
-): Promise<{ session: Session, success: boolean }> {
-  try {
-    // Calculate averages for the session
-    const attentionAvg = attentionValues.length 
-      ? attentionValues.reduce((sum, val) => sum + val, 0) / attentionValues.length 
-      : 0;
-    
-    const understandingAvg = understandingValues.length 
-      ? understandingValues.reduce((sum, val) => sum + val, 0) / understandingValues.length 
-      : 0;
-    
-    // Generate a summary based on transcripts
-    const summarizeTranscript = (transcripts: string[]) => {
-      // Take the first few transcripts to create a summary
-      const summarySnippets = transcripts.slice(0, 3).filter(Boolean);
-      
-      if (summarySnippets.length === 0) {
-        return `Session recording of "${title}" with average attention ${attentionAvg.toFixed(1)}% and understanding ${understandingAvg.toFixed(1)}%.`;
-      }
-      
-      // Create a summary that includes transcript snippets
-      return `Session recording of "${title}". Key moments include: ${summarySnippets.map(t => `"${t}"`).join('; ')}. Average attention was ${attentionAvg.toFixed(1)}% with an understanding of ${understandingAvg.toFixed(1)}%.`;
-    };
-    
-    const initialSummary = summarizeTranscript(transcripts);
-    
-    // Insert new session
-    const { data: sessionData, error: sessionError } = await supabase
-      .from('sessions')
-      .insert([
-        { 
-          title,
-          attention_avg: attentionAvg,
-          understanding_avg: understandingAvg,
-          summary: initialSummary
-        }
-      ])
-      .select()
-      .single();
-    
-    if (sessionError) {
-      console.error('Error creating session:', sessionError);
-      throw sessionError;
-    }
-    
-    const session = sessionData as Session;
-    console.log('Session created successfully:', session);
-
-    // Prepare timeline data (every 10 seconds)
-    const timelineData = [];
-    const interval = 10; // seconds
-    let currentTime = new Date();
-
-    for (let i = 0; i < transcripts.length; i++) {
-      // Round down to nearest 10-second interval
-      const timestamp = new Date(
-        currentTime.getTime() - (transcripts.length - i) * interval * 1000
-      );
-
-      timelineData.push({
-        session_id: session.id,
-        timestamp,
-        content: transcripts[i] || null,
-        attention_score: attentionValues[i] || null,
-        understanding_score: understandingValues[i] || null
-      });
-    }
-
-    // Insert timeline data
-    if (timelineData.length > 0) {
-      console.log('Inserting timeline data:', timelineData.length, 'entries');
-      const { error: timelineError } = await supabase
-        .from('session_timeline')
-        .insert(timelineData);
-      
-      if (timelineError) {
-        console.error('Error saving timeline data:', timelineError);
-        // Continue execution even if timeline insertion fails
-        // The session was created successfully
-      } else {
-        console.log('Timeline data saved successfully');
-      }
-    }
-
-    // Add behavior tags if they exist
-    if ((window as any).behaviorEvents && (window as any).behaviorEvents.length > 0) {
-      const tagInserts = (window as any).behaviorEvents.map(event => ({
-        session_id: session.id,
-        tag_text: event.tag,
-        timestamp: new Date(Date.now() - (event.timestamp * 1000)).toISOString()
-      }));
-
-      const { error: tagsError } = await supabase
-        .from('session_tags')
-        .insert(tagInserts);
-
-      if (tagsError) {
-        console.error('Error saving behavior tags:', tagsError);
-      } else {
-        console.log('Behavior tags saved successfully');
-      }
-    }
-    
-    // Return the created session
-    return {
-      session: {
-        ...session,
-        date: new Date(session.created_at || '').toLocaleDateString(),
-        understandingPercent: session.understanding_avg || 0,
-        confusedPercent: 100 - (session.understanding_avg || 0),
-        keyMoments: Math.floor(Math.random() * 5) + 1,
-      },
-      success: true
-    };
-  } catch (error) {
-    console.error('Error saving session data:', error);
-    return {
-      session: {} as Session,
-      success: false
-    };
-  }
-}
-
 export async function fetchSessionEvents(sessionId: string): Promise<SessionEvent[]> {
-  try {
-    console.log('Fetching session events for sessionId:', sessionId);
-    const { data, error } = await supabase
-      .rpc('get_session_timeline', { 
-        p_session_id: sessionId,
-        p_limit: 1000,
-        p_offset: 0 
-      });
+  const { data, error } = await supabase
+    .from('session_events')
+    .select('*')
+    .eq('session_id', sessionId)
+    .order('timestamp', { ascending: true });
 
-    if (error) {
-      console.error('Error fetching session timeline:', error);
-      throw error;
-    }
-
-    console.log('Timeline data received:', data?.length || 0, 'entries');
-
-    // Transform timeline data into separate events for attention, understanding, and transcript
-    const events: SessionEvent[] = [];
-    
-    data?.forEach(entry => {
-      const timestamp = entry.event_timestamp;
-      
-      // Add transcript event if content exists
-      if (entry.event_content) {
-        events.push({
-          id: `${entry.timeline_id}-transcript`,
-          session_id: sessionId,
-          timestamp,
-          event_type: 'transcript',
-          content: entry.event_content,
-          value: null
-        });
-      }
-      
-      // Add attention event if score exists
-      if (entry.event_attention_score !== null) {
-        events.push({
-          id: `${entry.timeline_id}-attention`,
-          session_id: sessionId,
-          timestamp,
-          event_type: 'attention',
-          content: null,
-          value: entry.event_attention_score
-        });
-      }
-      
-      // Add understanding event if score exists
-      if (entry.event_understanding_score !== null) {
-        events.push({
-          id: `${entry.timeline_id}-understanding`,
-          session_id: sessionId,
-          timestamp,
-          event_type: 'understanding',
-          content: null,
-          value: entry.event_understanding_score
-        });
-      }
-    });
-
-    console.log('Transformed events:', events);
-    return events;
-  } catch (error) {
-    console.error('Error in fetchSessionEvents:', error);
-    return [];
-  }
+  if (error) throw error;
+  // Cast the event_type to the correct type
+  return (data || []).map(event => ({
+    ...event,
+    event_type: event.event_type as 'transcript' | 'attention' | 'understanding'
+  }));
 }
 
 export async function fetchAIInsights(sessionId: string, type?: string): Promise<AIInsight[]> {
@@ -251,6 +70,126 @@ export async function fetchSessionTags(sessionId: string): Promise<{ id: string;
 
   if (error) throw error;
   return data || [];
+}
+
+// New function to save session data when recording ends
+export async function saveSessionData(
+  title: string,
+  transcripts: string[], 
+  attentionValues: number[], 
+  understandingValues: number[]
+): Promise<{ session: Session, success: boolean }> {
+  try {
+    // Calculate averages
+    const attentionAvg = attentionValues.length 
+      ? attentionValues.reduce((sum, val) => sum + val, 0) / attentionValues.length 
+      : 0;
+    
+    const understandingAvg = understandingValues.length 
+      ? understandingValues.reduce((sum, val) => sum + val, 0) / understandingValues.length 
+      : 0;
+    
+    // Create basic summary (will be enhanced by AI later)
+    const initialSummary = `Session recording of "${title}" with average attention ${attentionAvg.toFixed(1)}% and understanding ${understandingAvg.toFixed(1)}%.`;
+    
+    // Insert new session
+    const { data: sessionData, error: sessionError } = await supabase
+      .from('sessions')
+      .insert([
+        { 
+          title,
+          attention_avg: attentionAvg,
+          understanding_avg: understandingAvg,
+          summary: initialSummary
+        }
+      ])
+      .select()
+      .single();
+    
+    if (sessionError) throw sessionError;
+    
+    const session = sessionData as Session;
+    
+    // Insert session events for each transcript and metric
+    const eventInserts = [];
+    
+    // Insert transcript events
+    for (let i = 0; i < transcripts.length; i++) {
+      const timestamp = new Date(Date.now() - (transcripts.length - i) * 3000).toISOString();
+      eventInserts.push({
+        session_id: session.id,
+        event_type: 'transcript',
+        content: transcripts[i],
+        timestamp,
+        value: null
+      });
+    }
+    
+    // Insert attention events
+    for (let i = 0; i < attentionValues.length; i++) {
+      const timestamp = new Date(Date.now() - (attentionValues.length - i) * 4000).toISOString();
+      eventInserts.push({
+        session_id: session.id,
+        event_type: 'attention',
+        content: null,
+        timestamp,
+        value: attentionValues[i]
+      });
+    }
+    
+    // Insert understanding events
+    for (let i = 0; i < understandingValues.length; i++) {
+      const timestamp = new Date(Date.now() - (understandingValues.length - i) * 5000).toISOString();
+      eventInserts.push({
+        session_id: session.id,
+        event_type: 'understanding',
+        content: null,
+        timestamp,
+        value: understandingValues[i]
+      });
+    }
+    
+    if (eventInserts.length > 0) {
+      const { error: eventsError } = await supabase
+        .from('session_events')
+        .insert(eventInserts);
+      
+      if (eventsError) throw eventsError;
+    }
+
+    // Add behavior tags to the database
+    if ((window as any).behaviorEvents && (window as any).behaviorEvents.length > 0) {
+      const tagInserts = (window as any).behaviorEvents.map(event => ({
+        session_id: session.id,
+        tag_text: event.tag,
+        timestamp: new Date(Date.now() - (event.timestamp * 1000)).toISOString()
+      }));
+
+      const { error: tagsError } = await supabase
+        .from('session_tags')
+        .insert(tagInserts);
+
+      if (tagsError) throw tagsError;
+    }
+    
+    // Return the created session
+    return {
+      session: {
+        ...session,
+        date: new Date(session.created_at || '').toLocaleDateString(),
+        understandingPercent: session.understanding_avg || 0,
+        confusedPercent: 100 - (session.understanding_avg || 0),
+        keyMoments: Math.floor(Math.random() * 5) + 1, // Calculate key moments (for now using a placeholder)
+      },
+      success: true
+    };
+  } catch (error) {
+    console.error('Error saving session data:', error);
+    return {
+      session: {} as Session,
+      success: false
+    };
+  }
 }
 
 // Function to generate AI insights for a session
