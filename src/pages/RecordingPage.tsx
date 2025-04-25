@@ -11,6 +11,7 @@ import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/
 import { useToast } from "@/hooks/use-toast";
 import { saveSessionData, generateSessionInsights } from "@/lib/api";
 import { useSaveSession } from "@/components/recording/SaveSessionHandler";
+import { AudioRecorder } from "@/utils/AudioRecorder";
 
 type StudentStatus = 'Attentive' | 'Confused' | 'Inattentive';
 
@@ -45,6 +46,7 @@ const RecordingPage = () => {
   const [isSaving, setIsSaving] = useState(false);
   const prevUnderstanding = useRef(understanding);
   const prevAttention = useRef(attention);
+  const [audioRecorder, setAudioRecorder] = useState<AudioRecorder | null>(null);
 
   // For animated progress bar
   useEffect(() => { 
@@ -98,9 +100,26 @@ const RecordingPage = () => {
     setUnderstandingHistory([]);
     setTranscript([]);
     
-    // Store the lesson title in sessionStorage so it persists across pages
+    // Store the lesson title in sessionStorage
     sessionStorage.setItem('currentLessonTitle', lessonTitle);
     
+    // Start audio recording
+    const recorder = new AudioRecorder(
+      (text) => {
+        setTranscript(prev => [...prev, text]);
+      },
+      (error) => {
+        toast({
+          title: "Recording Error",
+          description: error.message,
+          variant: "destructive"
+        });
+      }
+    );
+    
+    recorder.start();
+    setAudioRecorder(recorder);
+
     // Simulate changing metrics over time
     const understandingInterval = setInterval(() => {
       setUnderstanding(prev => {
@@ -129,13 +148,13 @@ const RecordingPage = () => {
     
     const transcriptInterval = setInterval(() => {
       const randomPhrase = phrases[Math.floor(Math.random() * phrases.length)];
-      setTranscript(prev => [...prev, randomPhrase]);
+      // setTranscript(prev => [...prev, randomPhrase]);
     }, 3000);
     
     return () => {
       clearInterval(understandingInterval);
       clearInterval(attentionInterval);
-      clearInterval(transcriptInterval);
+      // clearInterval(transcriptInterval);
     };
   };
 
@@ -183,6 +202,12 @@ const RecordingPage = () => {
   const handleEndSession = () => {
     if (isSaving) return;
     setIsSaving(true);
+    
+    // Stop recording
+    if (audioRecorder) {
+      audioRecorder.stop();
+      setAudioRecorder(null);
+    }
     
     saveSession({
       lessonTitle,
