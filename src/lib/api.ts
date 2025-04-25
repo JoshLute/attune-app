@@ -159,7 +159,7 @@ export async function fetchSessionEvents(sessionId: string): Promise<SessionEven
       id: event.timeline_id,
       session_id: sessionId,
       timestamp: event.event_timestamp,
-      event_type: event.event_content ? 'transcript' : 'attention',
+      event_type: 'transcript', // Default type for consistent mapping
       content: event.event_content || null,
       value: event.event_attention_score || event.event_understanding_score || null
     }));

@@ -36,12 +36,15 @@ const AnalyticsPage = () => {
   // Find the selected session
   const selectedSession = sessions.find(session => session.id === selectedLessonId);
 
-  // Format events for the chart by directly using timeline data
+  // Format events for the chart using timeline data with proper null handling
   const analyticsData = events.map(event => {
     const timestamp = new Date(event.timestamp).toLocaleTimeString([], { 
       hour: '2-digit', 
       minute: '2-digit' 
     });
+
+    // Log the raw event data for debugging
+    console.log('Processing event:', event);
 
     return {
       timestamp,
@@ -49,9 +52,11 @@ const AnalyticsPage = () => {
       understanding: event.event_type === 'understanding' ? event.value || 0 : null,
       transcript: event.content || ""
     };
-  }).filter(Boolean);
+  });
 
-  // Add the handleDownloadReport function back
+  // Log the transformed data for debugging
+  console.log('Transformed analytics data:', analyticsData);
+
   const handleDownloadReport = () => {
     toast({
       title: "Report Downloaded",
