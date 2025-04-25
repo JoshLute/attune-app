@@ -44,6 +44,33 @@ export type Database = {
           },
         ]
       }
+      chat_messages: {
+        Row: {
+          content: string
+          created_at: string
+          id: string
+          metadata: Json | null
+          role: string
+          session_references: Json | null
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          id?: string
+          metadata?: Json | null
+          role: string
+          session_references?: Json | null
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          id?: string
+          metadata?: Json | null
+          role?: string
+          session_references?: Json | null
+        }
+        Relationships: []
+      }
       "live log": {
         Row: {
           confusion: number
@@ -64,6 +91,35 @@ export type Database = {
           transcription?: string
         }
         Relationships: []
+      }
+      notes_storage: {
+        Row: {
+          content: string
+          created_at: string
+          id: string
+          session_id: string | null
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          id?: string
+          session_id?: string | null
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          id?: string
+          session_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notes_storage_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "sessions"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       session_events: {
         Row: {
