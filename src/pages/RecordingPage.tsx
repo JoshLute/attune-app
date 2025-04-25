@@ -11,7 +11,6 @@ import { RecordingStudentCard } from "@/components/recording/RecordingStudentCar
 import { LiveMetrics } from "@/components/recording/LiveMetrics";
 import { LiveTranscript } from "@/components/recording/LiveTranscript";
 import { toast } from "@/components/ui/sonner";
-import { AlertCircle } from 'lucide-react';
 
 const RecordingPage = () => {
   const navigate = useNavigate();
@@ -31,7 +30,6 @@ const RecordingPage = () => {
   const [isSaving, setIsSaving] = useState(false);
   const [isListening, setIsListening] = useState(false);
   const [audioRecorder, setAudioRecorder] = useState<AudioRecorder | null>(null);
-  const [hasTranscriptionError, setHasTranscriptionError] = useState(false);
   
   // Check for backup on load
   useEffect(() => {
@@ -80,15 +78,6 @@ const RecordingPage = () => {
     };
   }, [isRecording]);
 
-  // Monitor transcript for API quota errors
-  useEffect(() => {
-    const hasQuotaError = transcript.some(text => 
-      text.includes("quota exceeded") || text.includes("service unavailable")
-    );
-    
-    setHasTranscriptionError(hasQuotaError);
-  }, [transcript]);
-
   // Single metrics update handler - now receives metrics only from LiveTranscript
   const handleMetricsUpdate = useCallback((newAttention: number, newUnderstanding: number) => {
     console.log('RecordingPage: Received metrics update:', { newAttention, newUnderstanding });
@@ -130,7 +119,6 @@ const RecordingPage = () => {
     setAttentionHistory([]);
     setUnderstandingHistory([]);
     setTranscript([]);
-    setHasTranscriptionError(false);
     
     sessionStorage.setItem('currentLessonTitle', lessonTitle);
     
@@ -151,27 +139,12 @@ const RecordingPage = () => {
         },
         (error) => {
           console.error("Recording error:", error);
-          
-          // Check if it's a quota error
-          if (error.message.includes("quota") || error.message.includes("API")) {
-            toast({
-              title: "Transcription Limited",
-              description: "OpenAI API quota exceeded. Recording will continue without full transcription.",
-              icon: <AlertCircle className="h-5 w-5" />,
-              duration: 10000,
-            });
-          } else {
-            showToast({
-              title: "Recording Error",
-              description: error.message,
-              variant: "destructive"
-            });
-          }
-          
-          // Don't stop listening for audio-level based metrics
-          if (!error.message.includes("quota") && !error.message.includes("API")) {
-            setIsListening(false);
-          }
+          showToast({
+            title: "Recording Error",
+            description: error.message,
+            variant: "destructive"
+          });
+          setIsListening(false);
         }
       );
       
@@ -280,19 +253,6 @@ const RecordingPage = () => {
                 </Button>
               </div>
               
-              {hasTranscriptionError && (
-                <div className="mb-4 p-3 bg-amber-50 border border-amber-200 rounded-lg flex items-center gap-3">
-                  <AlertCircle className="text-amber-500 h-5 w-5 flex-shrink-0" />
-                  <div className="text-sm text-amber-800">
-                    <p className="font-medium">OpenAI API Quota Exceeded</p>
-                    <p className="text-xs mt-0.5">
-                      Speech transcription is limited. Audio metrics and recording will continue normally. 
-                      Your session can still be saved and analyzed later.
-                    </p>
-                  </div>
-                </div>
-              )}
-              
               <div className="space-y-6">
                 <RecordingStudentCard 
                   student={activeStudent}
@@ -311,7 +271,6 @@ const RecordingPage = () => {
                   transcript={transcript}
                   isListening={isListening}
                   onMetricsUpdate={handleMetricsUpdate}
-                  audioRecorder={audioRecorder}
                 />
               </div>
             </>
