@@ -36,8 +36,20 @@ export async function saveSessionData(
       ? understandingValues.reduce((sum, val) => sum + val, 0) / understandingValues.length 
       : 0;
     
-    // Create initial summary
-    const initialSummary = `Session recording of "${title}" with average attention ${attentionAvg.toFixed(1)}% and understanding ${understandingAvg.toFixed(1)}%.`;
+    // Generate a summary based on transcripts
+    const summarizeTranscript = (transcripts: string[]) => {
+      // Take the first few transcripts to create a summary
+      const summarySnippets = transcripts.slice(0, 3).filter(Boolean);
+      
+      if (summarySnippets.length === 0) {
+        return `Session recording of "${title}" with average attention ${attentionAvg.toFixed(1)}% and understanding ${understandingAvg.toFixed(1)}%.`;
+      }
+      
+      // Create a summary that includes transcript snippets
+      return `Session recording of "${title}". Key moments include: ${summarySnippets.map(t => `"${t}"`).join('; ')}. Average attention was ${attentionAvg.toFixed(1)}% with an understanding of ${understandingAvg.toFixed(1)}%.`;
+    };
+    
+    const initialSummary = summarizeTranscript(transcripts);
     
     // Insert new session
     const { data: sessionData, error: sessionError } = await supabase
