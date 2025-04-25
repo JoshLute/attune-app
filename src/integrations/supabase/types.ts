@@ -9,6 +9,41 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      ai_insights: {
+        Row: {
+          content: string
+          created_at: string | null
+          id: string
+          metadata: Json | null
+          session_id: string | null
+          type: string
+        }
+        Insert: {
+          content: string
+          created_at?: string | null
+          id?: string
+          metadata?: Json | null
+          session_id?: string | null
+          type: string
+        }
+        Update: {
+          content?: string
+          created_at?: string | null
+          id?: string
+          metadata?: Json | null
+          session_id?: string | null
+          type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_insights_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       "live log": {
         Row: {
           confusion: number
@@ -27,6 +62,68 @@ export type Database = {
           inattention?: number | null
           time?: string
           transcription?: string
+        }
+        Relationships: []
+      }
+      session_events: {
+        Row: {
+          content: string | null
+          event_type: string
+          id: string
+          session_id: string | null
+          timestamp: string | null
+          value: number | null
+        }
+        Insert: {
+          content?: string | null
+          event_type: string
+          id?: string
+          session_id?: string | null
+          timestamp?: string | null
+          value?: number | null
+        }
+        Update: {
+          content?: string | null
+          event_type?: string
+          id?: string
+          session_id?: string | null
+          timestamp?: string | null
+          value?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "session_events_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sessions: {
+        Row: {
+          attention_avg: number | null
+          created_at: string | null
+          id: string
+          summary: string | null
+          title: string
+          understanding_avg: number | null
+        }
+        Insert: {
+          attention_avg?: number | null
+          created_at?: string | null
+          id?: string
+          summary?: string | null
+          title: string
+          understanding_avg?: number | null
+        }
+        Update: {
+          attention_avg?: number | null
+          created_at?: string | null
+          id?: string
+          summary?: string | null
+          title?: string
+          understanding_avg?: number | null
         }
         Relationships: []
       }
