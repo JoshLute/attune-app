@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { AttuneSidebar } from '@/components/sidebar/AttuneSidebar';
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from '@/components/ui/carousel';
@@ -8,11 +9,13 @@ import { UsersRound, Brain, Clock, Sparkles } from 'lucide-react';
 import { useSessions } from '@/contexts/SessionsContext';
 
 const SessionCard = ({ 
+  id,
   date, 
   understandingPercent, 
   confusedPercent, 
   keyMoments 
 }: { 
+  id: string;
   date: string;
   understandingPercent: number;
   confusedPercent: number;
@@ -53,8 +56,16 @@ const StatsCard = ({ icon: Icon, label, value }: { icon: any, label: string, val
 );
 
 const Index = () => {
-  const { sessions } = useSessions();
+  const { sessions, isLoading } = useSessions();
   const navigate = useNavigate();
+
+  // Prepare stats for the stats cards
+  const totalStudents = 24; // Static for now
+  const avgUnderstanding = sessions.length 
+    ? Math.round(sessions.reduce((sum, session) => sum + (session.understandingPercent || 0), 0) / sessions.length)
+    : 0;
+  const hoursCount = sessions.length * 2; // Assuming 2 hours per session for now
+  const keyMomentsCount = sessions.reduce((sum, session) => sum + (session.keyMoments || 0), 0);
 
   return (
     <div className="flex h-screen bg-gradient-to-br from-white to-gray-50">
@@ -68,35 +79,47 @@ const Index = () => {
 
           {/* Stats Cards */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            <StatsCard icon={UsersRound} label="Total Students" value="24" />
-            <StatsCard icon={Brain} label="Avg. Understanding" value="76%" />
-            <StatsCard icon={Clock} label="Hours Taught" value="127" />
-            <StatsCard icon={Sparkles} label="Key Moments" value="142" />
+            <StatsCard icon={UsersRound} label="Total Students" value={`${totalStudents}`} />
+            <StatsCard icon={Brain} label="Avg. Understanding" value={`${avgUnderstanding}%`} />
+            <StatsCard icon={Clock} label="Hours Taught" value={`${hoursCount}`} />
+            <StatsCard icon={Sparkles} label="Key Moments" value={`${keyMomentsCount}`} />
           </div>
           
           {/* Recent Sessions Carousel */}
           <div>
             <h2 className="text-2xl font-semibold text-[hsl(var(--attune-purple))] mb-4">Recent Sessions</h2>
-            <Carousel className="w-full">
-              <CarouselContent className="-ml-4 md:-ml-6">
-                {sessions.map((session) => (
-                  <CarouselItem 
-                    key={session.id} 
-                    className="pl-4 md:pl-6 md:basis-1/2 lg:basis-1/3 cursor-pointer"
-                    onClick={() => navigate(`/analytics?lesson=${session.id}`)}
-                  >
-                    <SessionCard 
-                      date={session.date}
-                      understandingPercent={session.understandingPercent}
-                      confusedPercent={session.confusedPercent}
-                      keyMoments={session.keyMoments}
-                    />
-                  </CarouselItem>
-                ))}
-              </CarouselContent>
-              <CarouselPrevious className="left-0" />
-              <CarouselNext className="right-0" />
-            </Carousel>
+            {sessions.length > 0 ? (
+              <Carousel className="w-full">
+                <CarouselContent className="-ml-4 md:-ml-6">
+                  {sessions.map((session) => (
+                    <CarouselItem 
+                      key={session.id} 
+                      className="pl-4 md:pl-6 md:basis-1/2 lg:basis-1/3 cursor-pointer"
+                      onClick={() => navigate(`/analytics?lesson=${session.id}`)}
+                    >
+                      <SessionCard 
+                        id={session.id}
+                        date={session.date || new Date(session.created_at).toLocaleDateString()}
+                        understandingPercent={session.understandingPercent || Math.round(session.understanding_avg || 0)}
+                        confusedPercent={session.confusedPercent || (100 - Math.round(session.understanding_avg || 0))}
+                        keyMoments={session.keyMoments || 3} // Placeholder for now
+                      />
+                    </CarouselItem>
+                  ))}
+                </CarouselContent>
+                <CarouselPrevious className="left-0" />
+                <CarouselNext className="right-0" />
+              </Carousel>
+            ) : (
+              <div className="text-center py-10 bg-gray-50 rounded-xl">
+                <p className="text-gray-500 mb-4">No sessions recorded yet</p>
+                <Link to="/recording">
+                  <Button className="bg-[hsl(var(--attune-purple))]">
+                    Start Your First Recording
+                  </Button>
+                </Link>
+              </div>
+            )}
           </div>
 
           {/* Action Buttons */}

@@ -9,6 +9,7 @@ import { RecordingSetup } from "@/components/recording/RecordingSetup";
 import BehaviorSidebar from "@/components/recording/BehaviorSidebar";
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/components/ui/accordion";
 import { useToast } from "@/hooks/use-toast";
+import { saveSessionData, generateSessionInsights } from "@/lib/api";
 
 type StudentStatus = 'Attentive' | 'Confused' | 'Inattentive';
 
@@ -38,12 +39,24 @@ const RecordingPage = () => {
   const [recordingTime, setRecordingTime] = useState(0);
   const [activeTag, setActiveTag] = useState<string | null>(null);
   const [behaviorEvents, setBehaviorEvents] = useState<{ tag: string, timestamp: number }[]>([]);
+  const [attentionHistory, setAttentionHistory] = useState<number[]>([]);
+  const [understandingHistory, setUnderstandingHistory] = useState<number[]>([]);
+  const [isSaving, setIsSaving] = useState(false);
   const prevUnderstanding = useRef(understanding);
   const prevAttention = useRef(attention);
 
   // For animated progress bar
-  useEffect(() => { prevUnderstanding.current = understanding }, [understanding]);
-  useEffect(() => { prevAttention.current = attention }, [attention]);
+  useEffect(() => { 
+    prevUnderstanding.current = understanding;
+    // Store history for later saving
+    setUnderstandingHistory(prev => [...prev, understanding]);
+  }, [understanding]);
+  
+  useEffect(() => { 
+    prevAttention.current = attention;
+    // Store history for later saving
+    setAttentionHistory(prev => [...prev, attention]);
+  }, [attention]);
 
   // Handle recording timer
   useEffect(() => {
@@ -80,6 +93,10 @@ const RecordingPage = () => {
   const handleStartRecording = () => {
     setIsSetupDialogOpen(false);
     setIsRecording(true);
+    setAttentionHistory([]);
+    setUnderstandingHistory([]);
+    setTranscript([]);
+    
     // Store the lesson title in sessionStorage so it persists across pages
     sessionStorage.setItem('currentLessonTitle', lessonTitle);
     
@@ -160,8 +177,51 @@ const RecordingPage = () => {
     }
   };
 
-  const handleEndSession = () => {
-    navigate("/analytics");
+  const handleEndSession = async () => {
+    if (isSaving) return;
+    setIsSaving(true);
+    
+    toast({
+      title: "Saving session",
+      description: "Please wait while we save your session data...",
+      duration: 5000,
+    });
+    
+    try {
+      // Save the session data to Supabase
+      const { session, success } = await saveSessionData(
+        lessonTitle,
+        transcript,
+        attentionHistory,
+        understandingHistory
+      );
+      
+      if (success && session.id) {
+        // Generate insights for the session
+        await generateSessionInsights(session.id);
+        
+        toast({
+          title: "Session saved",
+          description: "Your session has been saved. Redirecting to analytics...",
+          duration: 3000,
+        });
+        
+        // Navigate to the analytics page with the session ID
+        navigate(`/analytics?lesson=${session.id}`);
+      } else {
+        throw new Error("Failed to save session");
+      }
+    } catch (error) {
+      console.error("Error ending session:", error);
+      toast({
+        title: "Error",
+        description: "There was an error saving your session. Please try again.",
+        duration: 5000,
+      });
+      navigate("/analytics");
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const activeStudent = students.find(s => s.id === selectedStudent);
@@ -238,10 +298,12 @@ const RecordingPage = () => {
                   variant="default"
                   className="bg-[#9b87f5] hover:bg-[#7E69AB]"
                   onClick={handleEndSession}
+                  disabled={isSaving}
                 >
-                  End Session
+                  {isSaving ? "Saving..." : "End Session"}
                 </Button>
               </div>
+              
               
               <div className="space-y-6">
                 {/* Student Card */}

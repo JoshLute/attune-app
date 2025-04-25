@@ -6,6 +6,11 @@ export interface Session {
   summary: string | null;
   attention_avg: number | null;
   understanding_avg: number | null;
+  // Additional fields needed for the home page
+  date?: string;
+  understandingPercent?: number;
+  confusedPercent?: number;
+  keyMoments?: number;
 }
 
 export interface SessionEvent {
@@ -23,5 +28,5 @@ export interface AIInsight {
   type: 'summary' | 'review_point' | 'suggestion';
   content: string;
   created_at: string;
-  metadata: Record<string, any>;
+  metadata: any; // Change from Record<string, any> to any to match Json type
 }

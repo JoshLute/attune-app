@@ -1,13 +1,9 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { AttuneSidebar } from '@/components/sidebar/AttuneSidebar';
-import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
-import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
 import { Button } from '@/components/ui/button';
-import { Download } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { LessonSummary } from "@/components/analytics/LessonSummary";
-import { LessonSwitcher } from "@/components/analytics/LessonSwitcher";
 import { PartsToReviewSection } from "@/components/analytics/PartsToReviewSection";
 import { useSessionsContext } from "@/contexts/SessionsContext";
 import { NotesSection } from '@/components/analytics/NotesSection';
@@ -15,11 +11,24 @@ import { useSessionDetails } from '@/hooks/useSessionsData';
 import { SessionTranscript } from '@/components/analytics/SessionTranscript';
 import { AnalyticsChart } from '@/components/analytics/AnalyticsChart';
 import { AnalyticsHeader } from '@/components/analytics/AnalyticsHeader';
+import { Link, useSearchParams, useNavigate } from 'react-router-dom';
 
 const AnalyticsPage = () => {
   const { sessions, isLoading } = useSessionsContext();
-  // Use the first session as default if available
-  const [selectedLessonId, setSelectedLessonId] = useState(sessions[0]?.id || "");
+  const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
+  const lessonParam = searchParams.get('lesson');
+  
+  // Use the first session as default if available, or the one from URL params
+  const [selectedLessonId, setSelectedLessonId] = useState(lessonParam || sessions[0]?.id || "");
+  
+  // If the URL contains a lesson parameter but it's not set in state, update it
+  useEffect(() => {
+    if (lessonParam && lessonParam !== selectedLessonId) {
+      setSelectedLessonId(lessonParam);
+    }
+  }, [lessonParam]);
+  
   const { toast } = useToast();
 
   const { events, insights, isLoading: detailsLoading } = useSessionDetails(selectedLessonId);
@@ -62,15 +71,20 @@ const AnalyticsPage = () => {
     return <div className="flex justify-center items-center h-screen">Loading...</div>;
   }
 
-  // If no sessions available, show a message
+  // If no sessions available, show a message with a button to start recording
   if (sessions.length === 0) {
     return (
       <div className="flex h-screen bg-white">
         <AttuneSidebar />
         <div className="flex-1 p-6 flex justify-center items-center">
-          <div className="text-center">
-            <h1 className="text-2xl font-bold mb-4">No sessions available</h1>
-            <p>Create a new session to see analytics</p>
+          <div className="text-center space-y-6">
+            <h1 className="text-2xl font-bold mb-2 text-[hsl(var(--attune-purple))]">No sessions available</h1>
+            <p className="text-gray-600 mb-6">Record your first session to see analytics</p>
+            <Link to="/recording">
+              <Button className="bg-[hsl(var(--attune-purple))] hover:bg-[hsl(var(--attune-dark-purple))] text-lg py-6 px-8">
+                Start Your First Recording
+              </Button>
+            </Link>
           </div>
         </div>
       </div>
@@ -84,7 +98,10 @@ const AnalyticsPage = () => {
         <div className="max-w-7xl mx-auto">
           <AnalyticsHeader 
             selectedLessonId={selectedLessonId}
-            onLessonChange={setSelectedLessonId}
+            onLessonChange={(id) => {
+              setSelectedLessonId(id);
+              navigate(`/analytics?lesson=${id}`);
+            }}
             onDownloadReport={handleDownloadReport}
           />
           
