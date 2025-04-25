@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import type { Session, SessionEvent, AIInsight } from '@/types/analytics';
 import { Json } from '@/integrations/supabase/types';
@@ -59,6 +58,18 @@ export async function fetchAIInsights(sessionId: string, type?: string): Promise
     created_at: insight.created_at || '',
     metadata: insight.metadata,
   }));
+}
+
+// Add this function to fetch session tags
+export async function fetchSessionTags(sessionId: string): Promise<{ id: string; tag_text: string; timestamp: string }[]> {
+  const { data, error } = await supabase
+    .from('session_tags')
+    .select('*')
+    .eq('session_id', sessionId)
+    .order('timestamp', { ascending: true });
+
+  if (error) throw error;
+  return data || [];
 }
 
 // New function to save session data when recording ends
@@ -144,6 +155,21 @@ export async function saveSessionData(
         .insert(eventInserts);
       
       if (eventsError) throw eventsError;
+    }
+
+    // Add behavior tags to the database
+    if ((window as any).behaviorEvents && (window as any).behaviorEvents.length > 0) {
+      const tagInserts = (window as any).behaviorEvents.map(event => ({
+        session_id: session.id,
+        tag_text: event.tag,
+        timestamp: new Date(Date.now() - (event.timestamp * 1000)).toISOString()
+      }));
+
+      const { error: tagsError } = await supabase
+        .from('session_tags')
+        .insert(tagInserts);
+
+      if (tagsError) throw tagsError;
     }
     
     // Return the created session

@@ -1,6 +1,6 @@
 
 import { useQuery } from '@tanstack/react-query';
-import { fetchSessions, fetchSessionEvents, fetchAIInsights } from '@/lib/api';
+import { fetchSessions, fetchSessionEvents, fetchAIInsights, fetchSessionTags } from '@/lib/api';
 import { Session, SessionEvent, AIInsight } from '@/types/analytics';
 
 export function useSessions() {
@@ -37,6 +37,14 @@ export function useSessionDetails(sessionId: string) {
     retry: 3
   });
 
+  const { data: tags = [], isLoading: tagsLoading } = useQuery({
+    queryKey: ['session-tags', sessionId],
+    queryFn: () => fetchSessionTags(sessionId),
+    enabled: !!sessionId,
+    refetchOnWindowFocus: true,
+    retry: 3
+  });
+
   const refetch = () => {
     refetchEvents();
     refetchInsights();
@@ -45,7 +53,8 @@ export function useSessionDetails(sessionId: string) {
   return {
     events,
     insights,
-    isLoading: eventsLoading || insightsLoading,
+    tags,
+    isLoading: eventsLoading || insightsLoading || tagsLoading,
     refetch
   };
 }

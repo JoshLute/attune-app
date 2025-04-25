@@ -100,6 +100,38 @@ export type Database = {
           },
         ]
       }
+      session_tags: {
+        Row: {
+          created_at: string
+          id: string
+          session_id: string
+          tag_text: string
+          timestamp: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          session_id: string
+          tag_text: string
+          timestamp: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          session_id?: string
+          tag_text?: string
+          timestamp?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "session_tags_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       sessions: {
         Row: {
           attention_avg: number | null

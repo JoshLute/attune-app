@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { AttuneSidebar } from '@/components/sidebar/AttuneSidebar';
 import { Button } from '@/components/ui/button';
@@ -31,7 +30,7 @@ const AnalyticsPage = () => {
   
   const { toast } = useToast();
 
-  const { events, insights, isLoading: detailsLoading } = useSessionDetails(selectedLessonId);
+  const { events, insights, tags, isLoading: detailsLoading } = useSessionDetails(selectedLessonId);
   
   // Find the selected session
   const selectedSession = sessions.find(session => session.id === selectedLessonId);
@@ -90,6 +89,10 @@ const AnalyticsPage = () => {
       </div>
     );
   }
+
+  // Find session start and end times
+  const sessionStart = events.length > 0 ? events[0].timestamp : null;
+  const sessionEnd = events.length > 0 ? events[events.length - 1].timestamp : null;
   
   return (
     <div className="flex h-screen bg-white">
@@ -111,7 +114,8 @@ const AnalyticsPage = () => {
               {/* Chart Area */}
               <AnalyticsChart 
                 sessionTitle={selectedSession?.title || "No Session Selected"}
-                analyticsData={analyticsData} 
+                analyticsData={analyticsData}
+                sessionTags={tags} 
               />
               {/* PartsToReviewSection directly below the chart */}
               <PartsToReviewSection analytics={analyticsData} className="mt-4" />
@@ -124,6 +128,8 @@ const AnalyticsPage = () => {
                 understanding={selectedSession?.understanding_avg || 0}
                 attention={selectedSession?.attention_avg || 0}
                 summary={selectedSession?.summary || "No summary available"}
+                startTime={sessionStart}
+                endTime={sessionEnd}
               />
             </div>
           </div>

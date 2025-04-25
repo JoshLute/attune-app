@@ -1,6 +1,5 @@
-
 import React, { useState } from 'react';
-import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, Scatter } from 'recharts';
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
 import { Button } from '@/components/ui/button';
 import { BookOpen } from 'lucide-react';
@@ -12,17 +11,34 @@ interface AnalyticsData {
   transcript: string;
 }
 
+interface Tag {
+  id: string;
+  tag_text: string;
+  timestamp: string;
+}
+
 interface AnalyticsChartProps {
   sessionTitle: string;
   analyticsData: AnalyticsData[];
+  sessionTags?: Tag[];
 }
 
 export const AnalyticsChart: React.FC<AnalyticsChartProps> = ({
   sessionTitle,
-  analyticsData
+  analyticsData,
+  sessionTags = []
 }) => {
   const [timeRange, setTimeRange] = useState<'today' | 'week' | 'month'>('today');
   
+  // Prepare data with tags
+  const chartData = analyticsData.map(data => ({
+    ...data,
+    tag: sessionTags.find(tag => {
+      const tagTime = new Date(tag.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      return tagTime === data.timestamp;
+    })?.tag_text
+  }));
+
   return (
     <div className="rounded-3xl p-6 bg-gray-50 shadow-[5px_5px_15px_rgba(0,0,0,0.05),_-5px_-5px_15px_rgba(255,255,255,0.8)]">
       <div className="flex items-center justify-between mb-4">
@@ -69,14 +85,34 @@ export const AnalyticsChart: React.FC<AnalyticsChartProps> = ({
         >
           <ResponsiveContainer width="100%" height="100%">
             <AreaChart
-              data={analyticsData}
+              data={chartData}
               margin={{ top: 10, right: 30, left: 0, bottom: 0 }}
             >
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="timestamp" />
-              <YAxis tickFormatter={(value) => `${value}%`} />
-              <ChartTooltip content={<ChartTooltipContent />} />
+              <YAxis tickFormatter={(value) => `${Math.round(value)}%`} />
+              <ChartTooltip 
+                content={({ active, payload }) => {
+                  if (active && payload && payload.length) {
+                    return (
+                      <div className="bg-white p-2 border rounded shadow">
+                        <p className="text-sm">{payload[0].payload.timestamp}</p>
+                        {payload.map((p: any, i: number) => (
+                          <p key={i} className="text-sm">
+                            {p.name}: {Math.round(p.value)}%
+                          </p>
+                        ))}
+                        {payload[0].payload.tag && (
+                          <p className="text-sm font-bold mt-1">Tag: {payload[0].payload.tag}</p>
+                        )}
+                      </div>
+                    );
+                  }
+                  return null;
+                }}
+              />
               <Legend />
+              {/* Areas for metrics */}
               <Area
                 type="monotone"
                 dataKey="attention"
@@ -92,6 +128,13 @@ export const AnalyticsChart: React.FC<AnalyticsChartProps> = ({
                 stroke="#1E90FF"
                 fill="#ADD8E6"
                 fillOpacity={0.3}
+              />
+              {/* Scatter plot for behavior tags */}
+              <Scatter
+                name="Behaviors"
+                data={chartData.filter(d => d.tag)}
+                fill="#FF6B6B"
+                line={false}
               />
             </AreaChart>
           </ResponsiveContainer>
