@@ -5,86 +5,49 @@ interface LiveTranscriptProps {
   transcript: string[];
   isListening: boolean;
   onMetricsUpdate?: (attention: number, understanding: number) => void;
+  audioRecorder?: { getAudioLevel: () => number } | null;
 }
 
-export function LiveTranscript({ transcript, isListening, onMetricsUpdate }: LiveTranscriptProps) {
+export function LiveTranscript({ 
+  transcript, 
+  isListening, 
+  onMetricsUpdate,
+  audioRecorder 
+}: LiveTranscriptProps) {
   const audioLevelRef = useRef<HTMLDivElement>(null);
   const animationFrameRef = useRef<number | null>(null);
-  const audioContextRef = useRef<AudioContext | null>(null);
-  const analyserRef = useRef<AnalyserNode | null>(null);
-  const sourceRef = useRef<MediaStreamAudioSourceNode | null>(null);
 
+  // Simplified metrics update based on audio level
   useEffect(() => {
-    const cleanup = () => {
-      if (animationFrameRef.current) {
-        cancelAnimationFrame(animationFrameRef.current);
-        animationFrameRef.current = null;
+    const updateMetrics = () => {
+      if (!isListening || !audioRecorder) return;
+      
+      const level = audioRecorder.getAudioLevel();
+      
+      if (audioLevelRef.current) {
+        audioLevelRef.current.style.width = `${level}%`;
+      }
+
+      // Simple metrics based on audio level
+      if (onMetricsUpdate && level > 0) {
+        const attention = Math.min(100, level + 30);
+        const understanding = Math.min(100, level + 20);
+        onMetricsUpdate(attention, understanding);
       }
       
-      if (sourceRef.current) {
-        sourceRef.current.disconnect();
-        sourceRef.current = null;
-      }
-      
-      if (analyserRef.current) {
-        analyserRef.current.disconnect();
-        analyserRef.current = null;
-      }
-      
-      if (audioContextRef.current && audioContextRef.current.state !== 'closed') {
-        audioContextRef.current.close();
-        audioContextRef.current = null;
-      }
+      animationFrameRef.current = requestAnimationFrame(updateMetrics);
     };
 
-    if (!isListening) {
-      cleanup();
-      return;
+    if (isListening) {
+      updateMetrics();
     }
 
-    const setupAudioContext = async () => {
-      try {
-        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-        
-        audioContextRef.current = new AudioContext();
-        analyserRef.current = audioContextRef.current.createAnalyser();
-        analyserRef.current.fftSize = 256;
-        
-        sourceRef.current = audioContextRef.current.createMediaStreamSource(stream);
-        sourceRef.current.connect(analyserRef.current);
-
-        const dataArray = new Uint8Array(analyserRef.current.frequencyBinCount);
-        
-        const updateMetrics = () => {
-          if (!analyserRef.current || !isListening) return;
-          
-          analyserRef.current.getByteFrequencyData(dataArray);
-          const average = dataArray.reduce((acc, val) => acc + val, 0) / dataArray.length;
-          const level = Math.min(100, (average / 128) * 100);
-          
-          if (audioLevelRef.current) {
-            audioLevelRef.current.style.width = `${level}%`;
-          }
-
-          // Simple metrics based on audio level - no random variations
-          if (onMetricsUpdate && level > 0) {
-            const attention = Math.min(100, level + 30);  // Boost slightly for UI
-            const understanding = Math.min(100, level + 20);
-            onMetricsUpdate(attention, understanding);
-          }
-          
-          animationFrameRef.current = requestAnimationFrame(updateMetrics);
-        };
-        
-        updateMetrics();
-      } catch (err) {
-        console.error('Audio monitoring setup error:', err);
+    return () => {
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
       }
     };
-
-    setupAudioContext();
-    return cleanup;
-  }, [isListening, onMetricsUpdate]);
+  }, [isListening, audioRecorder, onMetricsUpdate]);
 
   return (
     <div className="bg-[#F1F0FB] p-6 rounded-3xl">
