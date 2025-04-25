@@ -37,8 +37,8 @@ const RecordingPage = () => {
   useEffect(() => {
     const backup = getBackupSessionData();
     if (backup) {
-      toast({
-        description: "You have an unsaved recording. Would you like to recover it?",
+      toast("You have an unsaved recording", {
+        description: "Would you like to recover it?",
         action: {
           label: "Recover",
           onClick: () => {
@@ -154,7 +154,7 @@ const RecordingPage = () => {
           
           // Check if it's a quota error
           if (error.message.includes("quota") || error.message.includes("API")) {
-            toast({
+            toast("Transcription Limited", {
               description: "OpenAI API quota exceeded. Recording will continue without full transcription.",
               icon: <AlertCircle className="h-5 w-5" />,
               duration: 10000,
@@ -322,4 +322,3 @@ const RecordingPage = () => {
 };
 
 export default RecordingPage;
-
