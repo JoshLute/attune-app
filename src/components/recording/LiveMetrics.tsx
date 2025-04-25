@@ -6,7 +6,7 @@ interface LiveMetricsProps {
   attention: number;
 }
 
-export function LiveMetrics({ understanding, attention }: LiveMetricsProps) {
+export function LiveMetrics({ understanding = 0, attention = 0 }: LiveMetricsProps) {
   return (
     <div className="bg-[#F1F0FB] p-6 rounded-3xl space-y-4">
       <h3 className="text-xl font-semibold text-[hsl(var(--attune-purple))]">Live Metrics</h3>
@@ -14,7 +14,7 @@ export function LiveMetrics({ understanding, attention }: LiveMetricsProps) {
         <div>
           <div className="flex justify-between mb-1">
             <span className="font-medium">Understanding</span>
-            <span className="font-medium">{understanding}%</span>
+            <span className="font-medium">{Math.round(understanding)}%</span>
           </div>
           <div className="relative h-3 bg-gray-200 rounded-full overflow-hidden">
             <div
@@ -30,7 +30,7 @@ export function LiveMetrics({ understanding, attention }: LiveMetricsProps) {
         <div>
           <div className="flex justify-between mb-1">
             <span className="font-medium">Attention</span>
-            <span className="font-medium">{attention}%</span>
+            <span className="font-medium">{Math.round(attention)}%</span>
           </div>
           <div className="relative h-3 bg-gray-200 rounded-full overflow-hidden">
             <div

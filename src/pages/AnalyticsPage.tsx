@@ -35,9 +35,9 @@ const AnalyticsPage = () => {
   // Find the selected session
   const selectedSession = sessions.find(session => session.id === selectedLessonId);
 
-  // Format events for the chart
+  // Format events for the chart with validation
   const analyticsData = events
-    .filter(event => event.event_type === 'transcript')
+    .filter(event => event.event_type === 'transcript' && event.content)
     .map(event => {
       // Find corresponding attention and understanding events with the nearest timestamp
       const timestamp = event.timestamp;
@@ -67,7 +67,17 @@ const AnalyticsPage = () => {
   };
   
   if (isLoading || detailsLoading) {
-    return <div className="flex justify-center items-center h-screen">Loading...</div>;
+    return (
+      <div className="flex h-screen bg-white">
+        <AttuneSidebar />
+        <div className="flex-1 p-6 flex justify-center items-center">
+          <div className="text-center">
+            <h2 className="text-xl font-semibold text-[hsl(var(--attune-purple))] mb-2">Loading analytics...</h2>
+            <p className="text-gray-500">Please wait while we fetch your session data.</p>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   // If no sessions available, show a message with a button to start recording
@@ -90,9 +100,34 @@ const AnalyticsPage = () => {
     );
   }
 
-  // Find session start and end times
+  // Find session start and end times with validation
   const sessionStart = events.length > 0 ? events[0].timestamp : null;
   const sessionEnd = events.length > 0 ? events[events.length - 1].timestamp : null;
+
+  // Show message if no events found for the selected session
+  if (selectedLessonId && events.length === 0) {
+    return (
+      <div className="flex h-screen bg-white">
+        <AttuneSidebar />
+        <div className="flex-1 p-6">
+          <div className="max-w-7xl mx-auto">
+            <AnalyticsHeader 
+              selectedLessonId={selectedLessonId}
+              onLessonChange={(id) => {
+                setSelectedLessonId(id);
+                navigate(`/analytics?lesson=${id}`);
+              }}
+              onDownloadReport={handleDownloadReport}
+            />
+            <div className="text-center mt-12">
+              <h2 className="text-xl font-semibold text-[hsl(var(--attune-purple))] mb-2">No Data Available</h2>
+              <p className="text-gray-500">No analytics data found for this session. Try selecting a different session or start a new recording.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
   
   return (
     <div className="flex h-screen bg-white">

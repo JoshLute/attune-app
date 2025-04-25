@@ -1,3 +1,4 @@
+
 import { toast } from "@/components/ui/sonner";
 import { saveSessionData, generateSessionInsights } from "@/lib/api";
 import { useNavigate } from "react-router-dom";
@@ -21,7 +22,18 @@ export const useSaveSession = () => {
     understandingHistory,
   }: SaveSessionHandlerProps) => {
     try {
-      console.log('Starting session save...', { lessonTitle });
+      // Validate data before saving
+      if (!transcript.length || !attentionHistory.length || !understandingHistory.length) {
+        throw new Error("Missing recording data");
+      }
+
+      console.log('Starting session save with data:', { 
+        lessonTitle,
+        transcriptCount: transcript.length,
+        attentionPoints: attentionHistory.length,
+        understandingPoints: understandingHistory.length
+      });
+
       toast.loading("Saving your session...", { id: "save-session" });
 
       const { session, success } = await saveSessionData(
@@ -35,7 +47,7 @@ export const useSaveSession = () => {
         throw new Error("Failed to save session data");
       }
 
-      console.log('Session saved successfully:', session);
+      console.log('Session saved successfully. Session ID:', session.id);
 
       // Generate insights for the session
       await generateSessionInsights(session.id);
@@ -50,13 +62,13 @@ export const useSaveSession = () => {
       // Store the new session ID in sessionStorage
       sessionStorage.setItem('newSessionId', session.id);
       
-      // Navigate to analytics page
+      // Navigate to analytics page with the session ID
       navigate(`/analytics?lesson=${session.id}`);
 
     } catch (error) {
       console.error("Error saving session:", error);
       toast.error(
-        "There was an error saving your session. Please try again.", 
+        `Save failed: ${error instanceof Error ? error.message : "Unknown error"}`, 
         { id: "save-session" }
       );
     }
