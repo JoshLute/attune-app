@@ -10,12 +10,15 @@ interface LiveTranscriptProps {
 
 export function LiveTranscript({ transcript, isListening, onMetricsUpdate }: LiveTranscriptProps) {
   const audioLevelRef = useRef<HTMLDivElement>(null);
-  // Fix: Use NodeJS.Timeout instead of number for the interval ref
   const metricsIntervalRef = useRef<NodeJS.Timeout | null>(null);
   
   useEffect(() => {
-    if (!isListening) return;
+    if (!isListening) {
+      console.log('LiveTranscript: Not listening, skipping metrics setup');
+      return;
+    }
     
+    console.log('LiveTranscript: Setting up audio context and metrics');
     let animationFrame: number;
     const audioContext = new AudioContext();
     const analyser = audioContext.createAnalyser();
@@ -23,10 +26,11 @@ export function LiveTranscript({ transcript, isListening, onMetricsUpdate }: Liv
     
     navigator.mediaDevices.getUserMedia({ audio: true })
       .then(stream => {
+        console.log('LiveTranscript: Audio stream connected');
         const source = audioContext.createMediaStreamSource(stream);
         source.connect(analyser);
         
-        // Update metrics every 10 seconds
+        // Single metrics update function
         const updateMetrics = () => {
           analyser.getByteFrequencyData(dataArray);
           const average = dataArray.reduce((acc, val) => acc + val, 0) / dataArray.length;
@@ -36,24 +40,28 @@ export function LiveTranscript({ transcript, isListening, onMetricsUpdate }: Liv
             audioLevelRef.current.style.width = `${level}%`;
           }
 
-          // Calculate metrics based on audio level
           if (onMetricsUpdate) {
             const attention = Math.max(20, Math.min(100, level + Math.random() * 20));
             const understanding = Math.max(20, Math.min(100, level + Math.random() * 20));
+            console.log('LiveTranscript: Updating metrics -', { attention, understanding });
             onMetricsUpdate(attention, understanding);
           }
         };
         
-        // Set up 10-second interval for metrics updates
+        // Clear any existing interval
         if (metricsIntervalRef.current) {
+          console.log('LiveTranscript: Clearing existing metrics interval');
           clearInterval(metricsIntervalRef.current);
         }
+        
+        // Set up new 10-second interval for metrics updates
+        console.log('LiveTranscript: Setting up new metrics interval');
         metricsIntervalRef.current = setInterval(updateMetrics, 10000);
         
         // Run the first update immediately
         updateMetrics();
         
-        // Continue updating audio level visualization more frequently
+        // Update audio level visualization more frequently
         const updateAudioLevel = () => {
           analyser.getByteFrequencyData(dataArray);
           const average = dataArray.reduce((acc, val) => acc + val, 0) / dataArray.length;
@@ -71,6 +79,7 @@ export function LiveTranscript({ transcript, isListening, onMetricsUpdate }: Liv
       .catch(err => console.error('Audio level monitoring error:', err));
       
     return () => {
+      console.log('LiveTranscript: Cleaning up audio context and intervals');
       if (metricsIntervalRef.current) {
         clearInterval(metricsIntervalRef.current);
       }

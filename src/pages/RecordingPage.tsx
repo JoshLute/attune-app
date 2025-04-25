@@ -30,9 +30,7 @@ const RecordingPage = () => {
   const [isListening, setIsListening] = useState(false);
   const [audioRecorder, setAudioRecorder] = useState<AudioRecorder | null>(null);
   
-  // Add refs to track intervals
-  const understandingIntervalRef = useRef<NodeJS.Timeout | null>(null);
-  const attentionIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  // Remove unnecessary interval refs
   const metricsUpdateIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   // Check for backup on load
@@ -84,6 +82,7 @@ const RecordingPage = () => {
 
   // Save metrics to history arrays
   const updateMetricsHistory = useCallback(() => {
+    console.log('RecordingPage: Saving metrics to history:', { attention, understanding });
     setAttentionHistory(prev => [...prev, attention]);
     setUnderstandingHistory(prev => [...prev, understanding]);
     
@@ -91,34 +90,17 @@ const RecordingPage = () => {
     (window as any).attentionHistory = [...attentionHistory, attention];
     (window as any).understandingHistory = [...understandingHistory, understanding];
     (window as any).transcriptHistory = transcript;
-    
-    console.log("Metrics updated:", {
-      attention,
-      understanding,
-      attentionHistoryLength: attentionHistory.length + 1,
-      understandingHistoryLength: understandingHistory.length + 1
-    });
   }, [attention, understanding, attentionHistory, understandingHistory, transcript]);
-
-  // Store behavior events globally for access during save
-  useEffect(() => {
-    (window as any).behaviorEvents = behaviorEvents;
-  }, [behaviorEvents]);
 
   // Update metrics handling to use synchronized 10-second intervals
   const handleMetricsUpdate = useCallback((newAttention: number, newUnderstanding: number) => {
+    console.log('RecordingPage: Received metrics update:', { newAttention, newUnderstanding });
     setAttention(newAttention);
     setUnderstanding(newUnderstanding);
     
     // Save metrics to history arrays
     setAttentionHistory(prev => [...prev, newAttention]);
     setUnderstandingHistory(prev => [...prev, newUnderstanding]);
-    
-    console.log('Metrics updated:', {
-      timestamp: new Date().toISOString(),
-      attention: newAttention,
-      understanding: newUnderstanding
-    });
   }, []);
 
   const students = [
@@ -200,29 +182,14 @@ const RecordingPage = () => {
     }
 
     // Clear any existing intervals
-    if (understandingIntervalRef.current) clearInterval(understandingIntervalRef.current);
-    if (attentionIntervalRef.current) clearInterval(attentionIntervalRef.current);
-    if (metricsUpdateIntervalRef.current) clearInterval(metricsUpdateIntervalRef.current);
-
-    // Simulate changing metrics over time
-    understandingIntervalRef.current = setInterval(() => {
-      setUnderstanding(prev => {
-        const change = Math.random() > 0.5 ? 5 : -5;
-        return Math.max(10, Math.min(100, prev + change));
-      });
-    }, 5000);
-    
-    attentionIntervalRef.current = setInterval(() => {
-      setAttention(prev => {
-        const change = Math.random() > 0.5 ? 8 : -8;
-        return Math.max(20, Math.min(100, prev + change));
-      });
-    }, 4000);
+    if (metricsUpdateIntervalRef.current) {
+      clearInterval(metricsUpdateIntervalRef.current);
+    }
     
     // Set up interval to save metrics to history
     metricsUpdateIntervalRef.current = setInterval(() => {
       updateMetricsHistory();
-    }, 3000);
+    }, 10000);
   };
 
   const handleQuickBehavior = (tag: string) => {
@@ -244,9 +211,6 @@ const RecordingPage = () => {
     if (isSaving) return;
     setIsSaving(true);
     
-    // Clean up intervals
-    if (understandingIntervalRef.current) clearInterval(understandingIntervalRef.current);
-    if (attentionIntervalRef.current) clearInterval(attentionIntervalRef.current);
     if (metricsUpdateIntervalRef.current) clearInterval(metricsUpdateIntervalRef.current);
     
     if (audioRecorder) {
