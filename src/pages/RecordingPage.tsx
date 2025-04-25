@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { AttuneSidebar } from "@/components/sidebar/AttuneSidebar";
 import { Button } from "@/components/ui/button";
@@ -8,7 +7,6 @@ import { useSaveSession, getBackupSessionData, clearBackupSessionData } from "@/
 import { AudioRecorder } from "@/utils/AudioRecorder";
 import { SetupDialog } from "@/components/recording/SetupDialog";
 import { RecordingStudentCard } from "@/components/recording/RecordingStudentCard";
-import { LiveMetrics } from "@/components/recording/LiveMetrics";
 import { LiveTranscript } from "@/components/recording/LiveTranscript";
 import { toast } from "@/components/ui/sonner";
 import { AlertCircle } from 'lucide-react';
@@ -21,51 +19,12 @@ const RecordingPage = () => {
   const [selectedStudent, setSelectedStudent] = useState<string | null>(null);
   const [lessonTitle, setLessonTitle] = useState('');
   const [isRecording, setIsRecording] = useState(false);
-  const [understanding, setUnderstanding] = useState(85);
-  const [attention, setAttention] = useState(90);
   const [transcript, setTranscript] = useState<string[]>([]);
   const [recordingTime, setRecordingTime] = useState(0);
-  const [behaviorEvents, setBehaviorEvents] = useState<{ tag: string, timestamp: number }[]>([]);
-  const [attentionHistory, setAttentionHistory] = useState<number[]>([]);
-  const [understandingHistory, setUnderstandingHistory] = useState<number[]>([]);
   const [isSaving, setIsSaving] = useState(false);
   const [isListening, setIsListening] = useState(false);
   const [audioRecorder, setAudioRecorder] = useState<AudioRecorder | null>(null);
   const [hasTranscriptionError, setHasTranscriptionError] = useState(false);
-  
-  // Check for backup on load
-  useEffect(() => {
-    const backup = getBackupSessionData();
-    if (backup) {
-      toast("You have an unsaved recording", {
-        description: "Would you like to recover it?",
-        action: {
-          label: "Recover",
-          onClick: () => {
-            setLessonTitle(backup.lessonTitle);
-            setTranscript(backup.transcript);
-            setAttentionHistory(backup.attentionHistory);
-            setUnderstandingHistory(backup.understandingHistory);
-            
-            // Set initial values from history
-            if (backup.attentionHistory.length > 0) {
-              setAttention(backup.attentionHistory[backup.attentionHistory.length - 1]);
-            }
-            if (backup.understandingHistory.length > 0) {
-              setUnderstanding(backup.understandingHistory[backup.understandingHistory.length - 1]);
-            }
-            
-            // Navigate to save
-            handleEndSession();
-          }
-        },
-        onDismiss: () => {
-          clearBackupSessionData();
-        },
-        duration: 10000
-      });
-    }
-  }, []);
 
   // Handle recording timer
   useEffect(() => {
@@ -89,23 +48,6 @@ const RecordingPage = () => {
     setHasTranscriptionError(hasQuotaError);
   }, [transcript]);
 
-  // Single metrics update handler - now receives metrics only from LiveTranscript
-  const handleMetricsUpdate = useCallback((newAttention: number, newUnderstanding: number) => {
-    console.log('RecordingPage: Received metrics update:', { newAttention, newUnderstanding });
-    
-    // Update current state
-    setAttention(newAttention);
-    setUnderstanding(newUnderstanding);
-    
-    // Save to history arrays
-    setAttentionHistory(prev => [...prev, newAttention]);
-    setUnderstandingHistory(prev => [...prev, newUnderstanding]);
-    
-    // Save to window for debugging
-    (window as any).attentionHistory = [...attentionHistory, newAttention];
-    (window as any).understandingHistory = [...understandingHistory, newUnderstanding];
-  }, [attentionHistory, understandingHistory]);
-
   const students = [
     {
       id: "jonathan",
@@ -127,8 +69,6 @@ const RecordingPage = () => {
   const handleStartRecording = () => {
     setIsSetupDialogOpen(false);
     setIsRecording(true);
-    setAttentionHistory([]);
-    setUnderstandingHistory([]);
     setTranscript([]);
     setHasTranscriptionError(false);
     
@@ -146,13 +86,10 @@ const RecordingPage = () => {
         (text) => {
           console.log("Received transcription:", text);
           setTranscript(prev => [...prev, text]);
-          // Save to window for debugging
-          (window as any).transcriptHistory = [...transcript, text];
         },
         (error) => {
           console.error("Recording error:", error);
           
-          // Check if it's a quota error
           if (error.message.includes("quota") || error.message.includes("API")) {
             toast("Transcription Limited", {
               description: "OpenAI API quota exceeded. Recording will continue without full transcription.",
@@ -167,7 +104,6 @@ const RecordingPage = () => {
             });
           }
           
-          // Don't stop listening for audio-level based metrics
           if (!error.message.includes("quota") && !error.message.includes("API")) {
             setIsListening(false);
           }
@@ -200,19 +136,6 @@ const RecordingPage = () => {
     }
   };
 
-  const handleQuickBehavior = (tag: string) => {
-    setBehaviorEvents(evts => [
-      ...evts,
-      { tag, timestamp: recordingTime }
-    ]);
-
-    showToast({
-      title: "Behavior Recorded",
-      description: `${activeStudent?.name} - ${tag}`,
-      duration: 3000,
-    });
-  };
-
   const { saveSession } = useSaveSession();
   
   const handleEndSession = () => {
@@ -226,19 +149,14 @@ const RecordingPage = () => {
       setIsListening(false);
     }
     
-    // Log what we're about to save
     console.log("Preparing to save session with:", {
       lessonTitle,
-      transcriptCount: transcript.length,
-      attentionHistoryCount: attentionHistory.length,
-      understandingHistoryCount: understandingHistory.length
+      transcriptCount: transcript.length
     });
     
     saveSession({
       lessonTitle,
-      transcript,
-      attentionHistory,
-      understandingHistory,
+      transcript
     }).finally(() => {
       setIsSaving(false);
     });
@@ -285,8 +203,7 @@ const RecordingPage = () => {
                   <div className="text-sm text-amber-800">
                     <p className="font-medium">OpenAI API Quota Exceeded</p>
                     <p className="text-xs mt-0.5">
-                      Speech transcription is limited. Audio metrics and recording will continue normally. 
-                      Your session can still be saved and analyzed later.
+                      Speech transcription is limited. Recording will continue normally.
                     </p>
                   </div>
                 </div>
@@ -295,22 +212,12 @@ const RecordingPage = () => {
               <div className="space-y-6">
                 <RecordingStudentCard 
                   student={activeStudent}
-                  understanding={understanding}
                   recordingTime={recordingTime}
-                  onBehaviorClick={handleQuickBehavior}
-                />
-                
-                <LiveMetrics 
-                  understanding={understanding}
-                  attention={attention}
-                  onMetricsUpdate={handleMetricsUpdate}
                 />
                 
                 <LiveTranscript 
                   transcript={transcript}
                   isListening={isListening}
-                  onMetricsUpdate={handleMetricsUpdate}
-                  audioRecorder={audioRecorder}
                 />
               </div>
             </>
