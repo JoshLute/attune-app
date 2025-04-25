@@ -39,6 +39,15 @@ serve(async (req) => {
       )
     }
     
+    // Get OpenAI API Key from environment variable
+    const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY');
+    if (!OPENAI_API_KEY) {
+      console.error("OPENAI_API_KEY not configured in environment");
+      throw new Error('OPENAI_API_KEY not configured');
+    }
+    
+    console.log("OpenAI API Key is configured, preparing form data");
+    
     // Prepare form data for OpenAI
     const formData = new FormData()
     const blob = new Blob([bytes], { type: 'audio/webm' })
@@ -46,12 +55,7 @@ serve(async (req) => {
     formData.append('model', 'gpt-4o-mini-transcribe') // Using the new model
     formData.append('response_format', 'json')
 
-    console.log("Sending to OpenAI API...");
-    
-    const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY');
-    if (!OPENAI_API_KEY) {
-      throw new Error('OPENAI_API_KEY not configured');
-    }
+    console.log("Sending request to OpenAI API...");
     
     const response = await fetch('https://api.openai.com/v1/audio/transcriptions', {
       method: 'POST',
@@ -60,6 +64,8 @@ serve(async (req) => {
       },
       body: formData,
     })
+
+    console.log(`OpenAI API response status: ${response.status}`);
 
     if (!response.ok) {
       const errorText = await response.text();

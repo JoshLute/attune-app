@@ -60,11 +60,12 @@ export class AudioRecorder {
 
       const buffer = await audioBlob.arrayBuffer();
       const base64Audio = btoa(
-        String.fromCharCode.apply(null, Array.from(new Uint8Array(buffer)))
+        String.fromCharCode(...new Uint8Array(buffer))
       );
 
       console.log(`Sending audio chunk for transcription, size: ${base64Audio.length}`);
       
+      // Use the full URL for the Supabase Edge Function
       const response = await fetch(
         'https://objlnvvnifkotxctblgd.functions.supabase.co/transcribe-audio',
         {
@@ -76,11 +77,16 @@ export class AudioRecorder {
         }
       );
 
+      console.log(`Transcription response status: ${response.status}`);
+
       if (!response.ok) {
+        const errorData = await response.text();
+        console.error(`Transcription error response: ${errorData}`);
         throw new Error(`Transcription failed: ${response.status}`);
       }
 
       const data = await response.json();
+      console.log(`Transcription response data:`, data);
       
       if (data.error) {
         throw new Error(data.error);
@@ -90,6 +96,8 @@ export class AudioRecorder {
         console.log('Received transcription:', data.text);
         this.onTranscription(data.text);
         this.transcriptionRetries = 0; // Reset retries on success
+      } else {
+        console.log('No transcription text received');
       }
 
       // Clear processed chunks
