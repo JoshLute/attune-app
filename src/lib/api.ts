@@ -53,9 +53,13 @@ export async function saveSessionData(
       .select()
       .single();
     
-    if (sessionError) throw sessionError;
+    if (sessionError) {
+      console.error('Error creating session:', sessionError);
+      throw sessionError;
+    }
     
     const session = sessionData as Session;
+    console.log('Session created successfully:', session);
 
     // Prepare timeline data (every 10 seconds)
     const timelineData = [];
@@ -71,7 +75,7 @@ export async function saveSessionData(
       timelineData.push({
         session_id: session.id,
         timestamp,
-        content: transcripts[i],
+        content: transcripts[i] || null,
         attention_score: attentionValues[i] || null,
         understanding_score: understandingValues[i] || null
       });
@@ -79,11 +83,18 @@ export async function saveSessionData(
 
     // Insert timeline data
     if (timelineData.length > 0) {
+      console.log('Inserting timeline data:', timelineData.length, 'entries');
       const { error: timelineError } = await supabase
         .from('session_timeline')
         .insert(timelineData);
       
-      if (timelineError) throw timelineError;
+      if (timelineError) {
+        console.error('Error saving timeline data:', timelineError);
+        // Continue execution even if timeline insertion fails
+        // The session was created successfully
+      } else {
+        console.log('Timeline data saved successfully');
+      }
     }
 
     // Add behavior tags if they exist
@@ -98,7 +109,11 @@ export async function saveSessionData(
         .from('session_tags')
         .insert(tagInserts);
 
-      if (tagsError) throw tagsError;
+      if (tagsError) {
+        console.error('Error saving behavior tags:', tagsError);
+      } else {
+        console.log('Behavior tags saved successfully');
+      }
     }
     
     // Return the created session
@@ -121,26 +136,37 @@ export async function saveSessionData(
   }
 }
 
-// Update the useSessionDetails hook to use the new timeline data
+// Updated to use the new session_timeline table via the get_session_timeline RPC function
 export async function fetchSessionEvents(sessionId: string): Promise<SessionEvent[]> {
-  const { data, error } = await supabase
-    .rpc('get_session_timeline', { 
-      p_session_id: sessionId,
-      p_limit: 1000, // Adjust limit as needed
-      p_offset: 0 
-    });
+  try {
+    console.log('Fetching session events for sessionId:', sessionId);
+    const { data, error } = await supabase
+      .rpc('get_session_timeline', { 
+        p_session_id: sessionId,
+        p_limit: 1000, // Adjust limit as needed
+        p_offset: 0 
+      });
 
-  if (error) throw error;
+    if (error) {
+      console.error('Error fetching session timeline:', error);
+      throw error;
+    }
 
-  // Transform timeline data to match SessionEvent type
-  return (data || []).map(event => ({
-    id: event.timeline_id,
-    session_id: sessionId,
-    timestamp: event.event_timestamp,
-    event_type: event.event_content ? 'transcript' : 'attention',
-    content: event.event_content,
-    value: event.event_content ? null : event.event_attention_score
-  }));
+    console.log('Timeline data received:', data?.length || 0, 'entries');
+
+    // Transform timeline data to match SessionEvent type
+    return (data || []).map(event => ({
+      id: event.timeline_id,
+      session_id: sessionId,
+      timestamp: event.event_timestamp,
+      event_type: event.event_content ? 'transcript' : 'attention',
+      content: event.event_content,
+      value: event.event_content ? null : event.event_attention_score
+    }));
+  } catch (error) {
+    console.error('Error in fetchSessionEvents:', error);
+    return [];
+  }
 }
 
 export async function fetchAIInsights(sessionId: string, type?: string): Promise<AIInsight[]> {
