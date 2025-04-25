@@ -1,18 +1,141 @@
+
 import React from 'react';
 import { AttuneSidebar } from '@/components/sidebar/AttuneSidebar';
+import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from '@/components/ui/carousel';
+import { Button } from '@/components/ui/button';
+import { Link, useNavigate } from 'react-router-dom';
+import { Card } from '@/components/ui/card';
+import { UsersRound, Brain, Clock, Sparkles } from 'lucide-react';
+import { useSessions } from '@/contexts/SessionsContext';
+
+const SessionCard = ({ 
+  id,
+  date, 
+  understandingPercent, 
+  confusedPercent, 
+  keyMoments 
+}: { 
+  id: string;
+  date: string;
+  understandingPercent: number;
+  confusedPercent: number;
+  keyMoments: number;
+}) => (
+  <div className="rounded-3xl p-5 bg-gradient-to-br from-[#F1F0FB] to-white text-[hsl(var(--attune-purple))] text-center min-w-[280px] flex flex-col gap-2 shadow-[5px_5px_15px_rgba(0,0,0,0.1),_-5px_-5px_15px_rgba(255,255,255,0.8)] hover:shadow-[3px_3px_10px_rgba(0,0,0,0.08),_-3px_-3px_10px_rgba(255,255,255,0.7)] transition-all duration-300">
+    <div className="bg-white/80 backdrop-blur-sm text-[hsl(var(--attune-purple))] rounded-xl py-2 font-medium shadow-inner">
+      {date}
+    </div>
+    <div className="text-2xl font-semibold mt-2">
+      {understandingPercent}%
+    </div>
+    <div className="text-sm text-gray-600">
+      Understanding
+    </div>
+    <div className="text-2xl font-semibold mt-2">
+      {confusedPercent}%
+    </div>
+    <div className="text-sm text-gray-600">
+      Confused
+    </div>
+    <div className="mt-4 text-sm text-gray-600">
+      {keyMoments} Key Moments
+    </div>
+  </div>
+);
+
+const StatsCard = ({ icon: Icon, label, value }: { icon: any, label: string, value: string }) => (
+  <Card className="p-4 flex items-center gap-4 bg-gradient-to-br from-white to-[#F1F0FB] shadow-[5px_5px_15px_rgba(0,0,0,0.1),_-5px_-5px_15px_rgba(255,255,255,0.8)]">
+    <div className="p-3 rounded-xl bg-[hsl(var(--attune-light-purple))]">
+      <Icon className="w-6 h-6 text-[hsl(var(--attune-purple))]" />
+    </div>
+    <div>
+      <p className="text-sm text-gray-600">{label}</p>
+      <p className="text-xl font-semibold text-[hsl(var(--attune-purple))]">{value}</p>
+    </div>
+  </Card>
+);
 
 const Index = () => {
-  const userName = "Dr. Lute"; // This matches the name in ProfileSection
+  const { sessions, isLoading } = useSessions();
+  const navigate = useNavigate();
+
+  // Prepare stats for the stats cards
+  const totalStudents = 24; // Static for now
+  const avgUnderstanding = sessions.length 
+    ? Math.round(sessions.reduce((sum, session) => sum + (session.understandingPercent || 0), 0) / sessions.length)
+    : 0;
+  const hoursCount = sessions.length * 2; // Assuming 2 hours per session for now
+  const keyMomentsCount = sessions.reduce((sum, session) => sum + (session.keyMoments || 0), 0);
 
   return (
-    <div className="flex h-screen bg-white">
+    <div className="flex h-screen bg-gradient-to-br from-white to-gray-50">
       <AttuneSidebar />
-      <div className="flex-1 p-8">
-        <div className="max-w-4xl mx-auto">
-          <h1 className="text-4xl font-bold mb-8">Welcome back, {userName}</h1>
-          <p className="text-gray-600">
-            Here's a summary of your recent activity and some quick actions to get you started.
-          </p>
+      <div className="flex-1 p-8 overflow-y-auto">
+        <div className="max-w-5xl mx-auto space-y-8">
+          <div className="space-y-2">
+            <h1 className="text-4xl font-bold text-[hsl(var(--attune-purple))] mb-2">Welcome Back, Josh</h1>
+            <p className="text-gray-600 text-lg">Meet students where they are. Then help them rise.</p>
+          </div>
+
+          {/* Stats Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <StatsCard icon={UsersRound} label="Total Students" value={`${totalStudents}`} />
+            <StatsCard icon={Brain} label="Avg. Understanding" value={`${avgUnderstanding}%`} />
+            <StatsCard icon={Clock} label="Hours Taught" value={`${hoursCount}`} />
+            <StatsCard icon={Sparkles} label="Key Moments" value={`${keyMomentsCount}`} />
+          </div>
+          
+          {/* Recent Sessions Carousel */}
+          <div>
+            <h2 className="text-2xl font-semibold text-[hsl(var(--attune-purple))] mb-4">Recent Sessions</h2>
+            {sessions.length > 0 ? (
+              <Carousel className="w-full">
+                <CarouselContent className="-ml-4 md:-ml-6">
+                  {sessions.map((session) => (
+                    <CarouselItem 
+                      key={session.id} 
+                      className="pl-4 md:pl-6 md:basis-1/2 lg:basis-1/3 cursor-pointer"
+                      onClick={() => navigate(`/analytics?lesson=${session.id}`)}
+                    >
+                      <SessionCard 
+                        id={session.id}
+                        date={session.date || new Date(session.created_at).toLocaleDateString()}
+                        understandingPercent={session.understandingPercent || Math.round(session.understanding_avg || 0)}
+                        confusedPercent={session.confusedPercent || (100 - Math.round(session.understanding_avg || 0))}
+                        keyMoments={session.keyMoments || 3} // Placeholder for now
+                      />
+                    </CarouselItem>
+                  ))}
+                </CarouselContent>
+                <CarouselPrevious className="left-0" />
+                <CarouselNext className="right-0" />
+              </Carousel>
+            ) : (
+              <div className="text-center py-10 bg-gray-50 rounded-xl">
+                <p className="text-gray-500 mb-4">No sessions recorded yet</p>
+                <Link to="/recording">
+                  <Button className="bg-[hsl(var(--attune-purple))]">
+                    Start Your First Recording
+                  </Button>
+                </Link>
+              </div>
+            )}
+          </div>
+
+          {/* Action Buttons */}
+          <div className="flex flex-col md:flex-row gap-6">
+            <Link to="/recording" className="flex-1">
+              <Button variant="outline" size="lg" className="w-full py-8 text-xl rounded-3xl border-2 bg-gradient-to-br from-white to-[#F1F0FB] shadow-[5px_5px_15px_rgba(0,0,0,0.1),_-5px_-5px_15px_rgba(255,255,255,0.8)] hover:shadow-[2px_2px_5px_rgba(0,0,0,0.08),_-2px_-2px_5px_rgba(255,255,255,0.7)] hover:translate-y-[-2px] transition-all duration-300 hover:bg-gradient-to-br hover:from-[hsl(var(--attune-light-purple))] hover:to-[hsl(var(--attune-purple))] hover:text-white hover:border-[hsl(var(--attune-purple))]">
+                <div className="text-[hsl(var(--attune-purple))] text-2xl font-bold">Start New Recording</div>
+              </Button>
+            </Link>
+            
+            <Button variant="outline" size="lg" className="flex-1 py-8 text-xl rounded-3xl border-2 bg-gradient-to-br from-white to-[#F1F0FB] shadow-[5px_5px_15px_rgba(0,0,0,0.1),_-5px_-5px_15px_rgba(255,255,255,0.8)] hover:shadow-[2px_2px_5px_rgba(0,0,0,0.08),_-2px_-2px_5px_rgba(255,255,255,0.7)] hover:translate-y-[-2px] transition-all duration-300 hover:bg-gradient-to-br hover:from-[hsl(var(--attune-light-purple))] hover:to-[hsl(var(--attune-purple))] hover:text-white hover:border-[hsl(var(--attune-purple))]">
+              <div className="text-[hsl(var(--attune-purple))] text-2xl font-bold flex items-center gap-2">
+                Settings
+              </div>
+            </Button>
+          </div>
         </div>
       </div>
     </div>
