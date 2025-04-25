@@ -3,6 +3,35 @@ import pandas as pd
 # import tensorflow.keras as keras
 import pickle
 import json
+import csv
+import os
+
+csv_path = "results/jp.csv"
+
+
+def create_csv_with_header(file_path, header):
+    """Creates a new CSV file with a header row.
+    
+    Args:
+        file_path (str): The path to the CSV file.
+        header (list): A list of column names for the header row.
+    """
+    with open(file_path, mode='w', newline='') as file:
+        writer = csv.writer(file)
+        writer.writerow(header)
+
+
+def append_to_csv(row):
+    """Appends a single row to a CSV file.
+    
+    Args:
+        file_path (str): The path to the CSV file.
+        row (list): A list of values representing a row to append.
+    """
+    with open(csv_path, mode='a', newline='') as file:
+        writer = csv.writer(file)
+        writer.writerow(row)
+
 
 
 def transform_set(scalar, data, fit=False):
@@ -21,20 +50,39 @@ def transform_set(scalar, data, fit=False):
 
 
 X_scalar = None
-output_file = "jp.json"
 
 
-# To load the data back
-with open('models/X_scalar.pckl', 'rb') as file:
-    X_scalar = pickle.load(file)
+def set_scalar(student_id):
+    # To load the data back
+    with open(f'models/X_scalar_{student_id}.pckl', 'rb') as file:
+        print(f'using models/X_scalar_{student_id}.pckl')
+        X_scalar = pickle.load(file)
 
-import tensorflow.keras as keras
-model = keras.models.load_model('models/jp.keras', custom_objects=None, compile=True, safe_mode=True)
+def set_csv(student_id, lesson):
+    print(f'using results/{student_id}_{lesson}.csv')
+    global csv_path
+    csv_path = f"results/{student_id}_{lesson}.csv"
+    if not os.path.isfile(csv_path):
+        create_csv_with_header(csv_path, ['timestamp', 'confused', 'control', 'understanding'])
 
-def inference(sample_queue):
+
+
+def set_model(student_id):
+    print(f'using models/{student_id}.keras')
+    # model = keras.models.load_model(f'models/{student_id}.keras', custom_objects=None, compile=True, safe_mode=True)
+    pass
+
+
+# import tensorflow.keras as keras
+# model = keras.models.load_model('models/jp.keras', custom_objects=None, compile=True, safe_mode=True)
+
+
+def inference(sample_queue, timestamp_queue):
     # eeg_buffer = eeg_buffer[:, :4]
     # eeg_buffer = np.expand_dims(eeg_buffer, axis=0)
     sample_queue = np.array(sample_queue)
+    timestamp = timestamp_queue[-1]
+
     # print(sample_queue.shape)
     if sample_queue.shape[0]<=1:
         return np.zeros((3))
@@ -44,12 +92,10 @@ def inference(sample_queue):
     samples = sample_queue[:,:,:4]
 
     window = transform_set(X_scalar, samples, fit=False)
-    preds = model.predict(window)
-    # preds = [1,2,3]
+    # preds = model.predict(window)
+    preds = [1,2,3]
 
-    # with open(f'results/output_file.json', 'w') as f:
-        # obj = {'class': (preds*100).reshape((preds.shape[0],)).tolist()}
-        # json.dump(obj, f)
-    # return window.shape
+
     avg = np.average(preds, axis=0)
-    return avg
+
+    return avg, timestamp

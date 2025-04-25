@@ -17,7 +17,7 @@ import numpy as np  # Module that simplifies computations on matrices
 import matplotlib.pyplot as plt  # Module used for plotting
 from pylsl import StreamInlet, resolve_byprop  # Module to receive EEG data
 import utils  # Our own utility functions
-from collections import deque
+import time
 
 # The try/except structure allows to quit the while loop by aborting the
 # script with <Ctrl-C>
@@ -28,6 +28,7 @@ print('Press Ctrl-C in the console to break the while loop.')
 from collections import deque
 # eeg_queue = deque(maxlen=12)
 eeg_queue = []
+timestamp_queue = []
 record = False
 
 def record_data():
@@ -95,7 +96,9 @@ def record_data():
 
 
             eeg_queue.append(eeg_buffer)
+            timestamp.append(timestamp[-1])
             if len(eeg_queue) > 10:
+                timestamp.pop(0)
                 eeg_queue.pop(0)
 
 
