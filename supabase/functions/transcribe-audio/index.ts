@@ -57,33 +57,77 @@ serve(async (req) => {
 
     console.log("Sending request to OpenAI API...");
     
-    const response = await fetch('https://api.openai.com/v1/audio/transcriptions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${OPENAI_API_KEY}`,
-      },
-      body: formData,
-    })
-
-    console.log(`OpenAI API response status: ${response.status}`);
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error(`OpenAI API error: ${response.status} ${errorText}`);
-      if (response.status === 401) {
-        throw new Error('Invalid OpenAI API key. Please check your API key in the project settings.');
+    try {
+      const response = await fetch('https://api.openai.com/v1/audio/transcriptions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${OPENAI_API_KEY}`,
+        },
+        body: formData,
+      })
+  
+      console.log(`OpenAI API response status: ${response.status}`);
+  
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error(`OpenAI API error: ${response.status} ${errorText}`);
+        
+        if (response.status === 429) {
+          // Return a more specific error for quota issues
+          return new Response(
+            JSON.stringify({ 
+              error: "OpenAI API quota exceeded. Unable to process transcription request.",
+              quota_exceeded: true
+            }),
+            { 
+              status: 429,
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            }
+          )
+        }
+        
+        if (response.status === 401) {
+          return new Response(
+            JSON.stringify({ 
+              error: 'Invalid OpenAI API key. Please check your API key in the project settings.',
+              auth_error: true
+            }),
+            { 
+              status: 401,
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            }
+          )
+        }
+        
+        throw new Error(`OpenAI API error: ${response.status} ${errorText}`);
       }
-      throw new Error(`OpenAI API error: ${response.status} ${errorText}`);
+  
+      const result = await response.json()
+      console.log('Transcription result:', result);
+  
+      return new Response(
+        JSON.stringify({ text: result.text }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    } catch (fetchError) {
+      console.error("Error calling OpenAI API:", fetchError);
+      
+      // Check if it's a network error
+      if (fetchError.message.includes("Failed to fetch") || fetchError.message.includes("network")) {
+        return new Response(
+          JSON.stringify({ 
+            error: "Network error connecting to OpenAI. Please check your internet connection.",
+            network_error: true
+          }),
+          { 
+            status: 503,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          }
+        )
+      }
+      
+      throw fetchError;
     }
-
-    const result = await response.json()
-    console.log('Transcription result:', result);
-
-    return new Response(
-      JSON.stringify({ text: result.text }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    )
-
   } catch (error) {
     console.error('Error:', error);
     return new Response(

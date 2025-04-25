@@ -1,5 +1,7 @@
+
 import React, { useEffect, useRef } from 'react';
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/components/ui/accordion";
+import { AlertCircle } from 'lucide-react';
 
 interface LiveTranscriptProps {
   transcript: string[];
@@ -16,6 +18,11 @@ export function LiveTranscript({
 }: LiveTranscriptProps) {
   const audioLevelRef = useRef<HTMLDivElement>(null);
   const animationFrameRef = useRef<number | null>(null);
+
+  // Check for API quota exceeded message
+  const hasQuotaError = transcript.some(text => 
+    text.includes("quota exceeded") || text.includes("service unavailable")
+  );
 
   // Simplified metrics update based on audio level
   useEffect(() => {
@@ -75,6 +82,20 @@ export function LiveTranscript({
         )}
       </div>
       
+      {hasQuotaError && (
+        <div className="bg-amber-50 border border-amber-200 p-3 rounded-md mb-4 flex items-start gap-2">
+          <AlertCircle className="text-amber-500 h-5 w-5 mt-0.5 flex-shrink-0" />
+          <div>
+            <p className="text-sm text-amber-800">
+              OpenAI API quota exceeded. Transcription is limited.
+              <span className="block mt-1 text-xs text-amber-600">
+                The app will continue recording your metrics but full transcription is unavailable.
+              </span>
+            </p>
+          </div>
+        </div>
+      )}
+      
       <div>
         <div className="w-full">
           <Accordion type="single" collapsible defaultValue="open">
@@ -87,7 +108,7 @@ export function LiveTranscript({
               <AccordionContent className="px-3 pb-4 pt-1 max-h-60 overflow-y-auto shadow-inner bg-white rounded-b-xl">
                 {transcript.length > 0 ? (
                   transcript.map((text, index) => (
-                    <p key={index} className="py-1 border-b border-gray-100 last:border-none">
+                    <p key={index} className={`py-1 border-b border-gray-100 last:border-none ${text.includes("service unavailable") ? "text-amber-600 italic" : ""}`}>
                       {text}
                     </p>
                   ))
