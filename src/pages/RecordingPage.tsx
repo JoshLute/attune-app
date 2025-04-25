@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { AttuneSidebar } from "@/components/sidebar/AttuneSidebar";
 import { Button } from "@/components/ui/button";
@@ -44,6 +45,7 @@ const RecordingPage = () => {
   const [attentionHistory, setAttentionHistory] = useState<number[]>([]);
   const [understandingHistory, setUnderstandingHistory] = useState<number[]>([]);
   const [isSaving, setIsSaving] = useState(false);
+  const [isListening, setIsListening] = useState(false);
   const prevUnderstanding = useRef(understanding);
   const prevAttention = useRef(attention);
   const [audioRecorder, setAudioRecorder] = useState<AudioRecorder | null>(null);
@@ -104,21 +106,54 @@ const RecordingPage = () => {
     sessionStorage.setItem('currentLessonTitle', lessonTitle);
     
     // Start audio recording
-    const recorder = new AudioRecorder(
-      (text) => {
-        setTranscript(prev => [...prev, text]);
-      },
-      (error) => {
+    try {
+      toast({
+        title: "Starting Recording",
+        description: "Initializing microphone...",
+      });
+      
+      setIsListening(true);
+      
+      const recorder = new AudioRecorder(
+        (text) => {
+          console.log("Received transcription:", text);
+          setTranscript(prev => [...prev, text]);
+        },
+        (error) => {
+          console.error("Recording error:", error);
+          toast({
+            title: "Recording Error",
+            description: error.message,
+            variant: "destructive"
+          });
+          setIsListening(false);
+        }
+      );
+      
+      recorder.start().then(() => {
         toast({
-          title: "Recording Error",
-          description: error.message,
+          title: "Recording Active",
+          description: "Microphone is now active and listening",
+        });
+        setAudioRecorder(recorder);
+      }).catch(error => {
+        console.error("Failed to start recording:", error);
+        toast({
+          title: "Microphone Access Failed",
+          description: "Please check microphone permissions and try again",
           variant: "destructive"
         });
-      }
-    );
-    
-    recorder.start();
-    setAudioRecorder(recorder);
+        setIsListening(false);
+      });
+    } catch (error) {
+      console.error("Error initializing audio recorder:", error);
+      toast({
+        title: "Recording Setup Failed",
+        description: "There was an error setting up audio recording",
+        variant: "destructive"
+      });
+      setIsListening(false);
+    }
 
     // Simulate changing metrics over time
     const understandingInterval = setInterval(() => {
@@ -134,27 +169,10 @@ const RecordingPage = () => {
         return Math.max(20, Math.min(100, prev + change));
       });
     }, 4000);
-
-    // Simulate transcript generation
-    const phrases = [
-      "I think I understand this concept now.",
-      "Could you explain that part again?",
-      "This makes a lot more sense than before.",
-      "I'm having trouble with this section.",
-      "Oh, I see how that works now!",
-      "Wait, how does this relate to what we learned last week?",
-      "That's an interesting approach to solving the problem."
-    ];
-    
-    const transcriptInterval = setInterval(() => {
-      const randomPhrase = phrases[Math.floor(Math.random() * phrases.length)];
-      // setTranscript(prev => [...prev, randomPhrase]);
-    }, 3000);
     
     return () => {
       clearInterval(understandingInterval);
       clearInterval(attentionInterval);
-      // clearInterval(transcriptInterval);
     };
   };
 
@@ -205,8 +223,10 @@ const RecordingPage = () => {
     
     // Stop recording
     if (audioRecorder) {
+      console.log("Stopping audio recorder...");
       audioRecorder.stop();
       setAudioRecorder(null);
+      setIsListening(false);
     }
     
     saveSession({
@@ -379,10 +399,21 @@ const RecordingPage = () => {
                 </div>
                 {/* Transcript (collapsible) */}
                 <div className="bg-[#F1F0FB] p-6 rounded-3xl">
-                  <h3 className="text-xl font-semibold text-[hsl(var(--attune-purple))] mb-4">Live Transcript</h3>
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-xl font-semibold text-[hsl(var(--attune-purple))]">Live Transcript</h3>
+                    {isListening && (
+                      <span className="flex items-center gap-2">
+                        <span className="relative flex h-3 w-3">
+                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                          <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500"></span>
+                        </span>
+                        <span className="text-sm text-gray-600">Listening</span>
+                      </span>
+                    )}
+                  </div>
                   <div>
                     <div className="w-full">
-                      <Accordion type="single" collapsible defaultValue={transcript.length > 0 ? "open" : undefined}>
+                      <Accordion type="single" collapsible defaultValue="open">
                         <AccordionItem value="open" className="border-none rounded-xl bg-white p-0">
                           <AccordionTrigger className="px-3 py-2 rounded-xl focus:outline-none text-base font-medium text-left bg-white hover:bg-gray-100">
                             {transcript.length > 0 ? "Show Transcript" : "Waiting for speech..."}
