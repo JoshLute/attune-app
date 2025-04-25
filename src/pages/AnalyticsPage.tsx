@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { AttuneSidebar } from '@/components/sidebar/AttuneSidebar';
 import { Button } from '@/components/ui/button';
@@ -36,26 +35,45 @@ const AnalyticsPage = () => {
   // Find the selected session
   const selectedSession = sessions.find(session => session.id === selectedLessonId);
 
-  // Format events for the chart using timeline data with proper null handling
-  const analyticsData = events.map(event => {
+  // Format events for the chart by combining events at same timestamp
+  const analyticsData = events.reduce((acc: any[], event) => {
     const timestamp = new Date(event.timestamp).toLocaleTimeString([], { 
       hour: '2-digit', 
       minute: '2-digit' 
     });
 
-    // Log the raw event data for debugging
-    console.log('Processing event:', event);
+    // Find existing entry for this timestamp or create new one
+    let entry = acc.find(item => item.timestamp === timestamp);
+    if (!entry) {
+      entry = {
+        timestamp,
+        attention: null,
+        understanding: null,
+        transcript: ""
+      };
+      acc.push(entry);
+    }
 
-    return {
-      timestamp,
-      attention: event.event_type === 'attention' ? event.value || 0 : null,
-      understanding: event.event_type === 'understanding' ? event.value || 0 : null,
-      transcript: event.content || ""
-    };
+    // Update the entry based on event type
+    if (event.event_type === 'attention') {
+      entry.attention = event.value;
+    } else if (event.event_type === 'understanding') {
+      entry.understanding = event.value;
+    } else if (event.event_type === 'transcript') {
+      entry.transcript = event.content || "";
+    }
+
+    return acc;
+  }, []);
+
+  // Sort analyticsData by timestamp
+  analyticsData.sort((a, b) => {
+    const timeA = new Date(`1970/01/01 ${a.timestamp}`).getTime();
+    const timeB = new Date(`1970/01/01 ${b.timestamp}`).getTime();
+    return timeA - timeB;
   });
 
-  // Log the transformed data for debugging
-  console.log('Transformed analytics data:', analyticsData);
+  console.log('Final analytics data:', analyticsData);
 
   const handleDownloadReport = () => {
     toast({

@@ -136,7 +136,6 @@ export async function saveSessionData(
   }
 }
 
-// Updated to use the new session_timeline table via the get_session_timeline RPC function
 export async function fetchSessionEvents(sessionId: string): Promise<SessionEvent[]> {
   try {
     console.log('Fetching session events for sessionId:', sessionId);
@@ -154,15 +153,51 @@ export async function fetchSessionEvents(sessionId: string): Promise<SessionEven
 
     console.log('Timeline data received:', data?.length || 0, 'entries');
 
-    // Transform timeline data to match SessionEvent type
-    return (data || []).map(event => ({
-      id: event.timeline_id,
-      session_id: sessionId,
-      timestamp: event.event_timestamp,
-      event_type: 'transcript', // Default type for consistent mapping
-      content: event.event_content || null,
-      value: event.event_attention_score || event.event_understanding_score || null
-    }));
+    // Transform timeline data into separate events for attention, understanding, and transcript
+    const events: SessionEvent[] = [];
+    
+    data?.forEach(entry => {
+      const timestamp = entry.event_timestamp;
+      
+      // Add transcript event if content exists
+      if (entry.event_content) {
+        events.push({
+          id: `${entry.timeline_id}-transcript`,
+          session_id: sessionId,
+          timestamp,
+          event_type: 'transcript',
+          content: entry.event_content,
+          value: null
+        });
+      }
+      
+      // Add attention event if score exists
+      if (entry.event_attention_score !== null) {
+        events.push({
+          id: `${entry.timeline_id}-attention`,
+          session_id: sessionId,
+          timestamp,
+          event_type: 'attention',
+          content: null,
+          value: entry.event_attention_score
+        });
+      }
+      
+      // Add understanding event if score exists
+      if (entry.event_understanding_score !== null) {
+        events.push({
+          id: `${entry.timeline_id}-understanding`,
+          session_id: sessionId,
+          timestamp,
+          event_type: 'understanding',
+          content: null,
+          value: entry.event_understanding_score
+        });
+      }
+    });
+
+    console.log('Transformed events:', events);
+    return events;
   } catch (error) {
     console.error('Error in fetchSessionEvents:', error);
     return [];
