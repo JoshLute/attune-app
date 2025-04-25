@@ -1,3 +1,4 @@
+
 import React, { useEffect, useRef } from 'react';
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/components/ui/accordion";
 
@@ -9,7 +10,8 @@ interface LiveTranscriptProps {
 
 export function LiveTranscript({ transcript, isListening, onMetricsUpdate }: LiveTranscriptProps) {
   const audioLevelRef = useRef<HTMLDivElement>(null);
-  const metricsIntervalRef = useRef<number | null>(null);
+  // Fix: Use NodeJS.Timeout instead of number for the interval ref
+  const metricsIntervalRef = useRef<NodeJS.Timeout | null>(null);
   
   useEffect(() => {
     if (!isListening) return;
