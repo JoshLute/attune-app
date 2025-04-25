@@ -5,7 +5,7 @@ import { LessonSwitcher } from '@/components/analytics/LessonSwitcher';
 import { LessonSummary } from '@/components/analytics/LessonSummary';
 import { PartsToReviewSection } from '@/components/analytics/PartsToReviewSection';
 import { NotesSection } from '@/components/analytics/NotesSection';
-import { supabase } from '@/integrations/supabase/client';
+import { useSessionEvents } from '@/hooks/useSessionData';
 
 interface AnalyticsData {
   timestamp: string;
@@ -19,39 +19,21 @@ export default function AnalyticsPage() {
   const [selectedSession, setSelectedSession] = useState<string>('1');
   const [analyticsData, setAnalyticsData] = useState<AnalyticsData[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  
+  const { data: sessionEvents, isLoading: eventsLoading } = useSessionEvents(selectedSession);
 
   useEffect(() => {
-    const fetchData = async () => {
-      setIsLoading(true);
-      try {
-        const { data: sessionEvents, error } = await supabase
-          .from('session_events')
-          .select('*')
-          .eq('session_id', selectedSession)
-          .order('timestamp', { ascending: true });
-
-        if (error) throw error;
-
-        if (sessionEvents) {
-          const formattedData: AnalyticsData[] = sessionEvents.map(event => ({
-            timestamp: event.timestamp,
-            attention: event.content.attention || 0,
-            understanding: event.content.understanding || 0,
-            transcript: event.content.transcript || ''
-          }));
-          setAnalyticsData(formattedData);
-        }
-      } catch (error) {
-        console.error('Error fetching analytics data:', error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    if (selectedSession) {
-      fetchData();
+    if (sessionEvents) {
+      const formattedData: AnalyticsData[] = sessionEvents.map(event => ({
+        timestamp: event.timestamp,
+        attention: event.content.attention || 0,
+        understanding: event.content.understanding || 0,
+        transcript: event.content.transcript || ''
+      }));
+      setAnalyticsData(formattedData);
+      setIsLoading(false);
     }
-  }, [selectedSession]);
+  }, [sessionEvents]);
 
   // Calculate averages using proper reduce initialization
   const averageAttention = analyticsData.length > 0
@@ -66,7 +48,7 @@ export default function AnalyticsPage() {
     ? analyticsData[analyticsData.length - 1].transcript
     : '';
 
-  if (isLoading) {
+  if (isLoading || eventsLoading) {
     return <div className="p-6">Loading analytics data...</div>;
   }
 

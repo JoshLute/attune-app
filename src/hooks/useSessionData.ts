@@ -11,6 +11,18 @@ export interface SessionData {
   summary: string | null;
 }
 
+export interface SessionEvent {
+  id: string;
+  session_id: string;
+  timestamp: string;
+  event_type: 'transcript' | 'metric' | 'behavior';
+  content: {
+    attention?: number;
+    understanding?: number;
+    transcript?: string;
+  };
+}
+
 export const useSessionData = (sessionId: string) => {
   return useQuery({
     queryKey: ['session', sessionId],
@@ -39,7 +51,7 @@ export const useSessionEvents = (sessionId: string) => {
         .order('timestamp', { ascending: true });
 
       if (error) throw error;
-      return data;
+      return data as SessionEvent[];
     },
     enabled: !!sessionId
   });
