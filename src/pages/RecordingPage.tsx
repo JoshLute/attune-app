@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { AttuneSidebar } from "@/components/sidebar/AttuneSidebar";
 import { Button } from "@/components/ui/button";
@@ -106,9 +105,20 @@ const RecordingPage = () => {
     (window as any).behaviorEvents = behaviorEvents;
   }, [behaviorEvents]);
 
+  // Update metrics handling to use synchronized 10-second intervals
   const handleMetricsUpdate = useCallback((newAttention: number, newUnderstanding: number) => {
-    // This callback will be called whenever metrics change in the LiveMetrics component
-    console.log("LiveMetrics update:", { newAttention, newUnderstanding });
+    setAttention(newAttention);
+    setUnderstanding(newUnderstanding);
+    
+    // Save metrics to history arrays
+    setAttentionHistory(prev => [...prev, newAttention]);
+    setUnderstandingHistory(prev => [...prev, newUnderstanding]);
+    
+    console.log('Metrics updated:', {
+      timestamp: new Date().toISOString(),
+      attention: newAttention,
+      understanding: newUnderstanding
+    });
   }, []);
 
   const students = [
@@ -319,6 +329,7 @@ const RecordingPage = () => {
                 <LiveTranscript 
                   transcript={transcript}
                   isListening={isListening}
+                  onMetricsUpdate={handleMetricsUpdate}
                 />
               </div>
             </>

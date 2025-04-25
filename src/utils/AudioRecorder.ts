@@ -5,7 +5,8 @@ export class AudioRecorder {
   private audioChunks: Blob[] = [];
   private retryTimeout: NodeJS.Timeout | null = null;
   private maxRetries = 3;
-  private retryDelay = 2000; // 2 seconds between retries
+  private retryDelay = 2000;
+  private transcriptionInterval: NodeJS.Timeout | null = null;
 
   constructor(
     private onTranscription: (text: string) => void,
@@ -14,11 +15,11 @@ export class AudioRecorder {
 
   async start() {
     try {
-      console.log('Starting audio recording with optimal settings...');
+      console.log('Starting audio recording with synchronized 10-second intervals...');
       this.stream = await navigator.mediaDevices.getUserMedia({ 
         audio: {
-          sampleRate: 24000, // Required sample rate for OpenAI
-          channelCount: 1,   // Mono audio
+          sampleRate: 24000,
+          channelCount: 1,
           echoCancellation: true,
           noiseSuppression: true,
           autoGainControl: true
@@ -29,16 +30,18 @@ export class AudioRecorder {
         mimeType: 'audio/webm',
       });
       
+      // Set up 10-second chunks for transcription
       this.mediaRecorder.ondataavailable = async (event) => {
         if (event.data.size > 0) {
           this.audioChunks.push(event.data);
-          console.log(`Audio chunk captured: ${event.data.size} bytes`);
+          console.log(`Audio chunk captured: ${event.data.size} bytes at ${new Date().toISOString()}`);
           await this.transcribeAudioWithRetry(0);
         }
       };
 
-      this.mediaRecorder.start(5000); // Capture in 5-second chunks
-      console.log('Audio recording started successfully with optimal settings');
+      // Start recording in 10-second chunks
+      this.mediaRecorder.start(10000);
+      console.log('Audio recording started with 10-second chunk intervals');
 
     } catch (error) {
       console.error('Failed to start recording:', error);

@@ -1,14 +1,15 @@
-
 import React, { useEffect, useRef } from 'react';
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/components/ui/accordion";
 
 interface LiveTranscriptProps {
   transcript: string[];
   isListening: boolean;
+  onMetricsUpdate?: (attention: number, understanding: number) => void;
 }
 
-export function LiveTranscript({ transcript, isListening }: LiveTranscriptProps) {
+export function LiveTranscript({ transcript, isListening, onMetricsUpdate }: LiveTranscriptProps) {
   const audioLevelRef = useRef<HTMLDivElement>(null);
+  const metricsIntervalRef = useRef<number | null>(null);
   
   useEffect(() => {
     if (!isListening) return;
@@ -23,6 +24,34 @@ export function LiveTranscript({ transcript, isListening }: LiveTranscriptProps)
         const source = audioContext.createMediaStreamSource(stream);
         source.connect(analyser);
         
+        // Update metrics every 10 seconds
+        const updateMetrics = () => {
+          analyser.getByteFrequencyData(dataArray);
+          const average = dataArray.reduce((acc, val) => acc + val, 0) / dataArray.length;
+          const level = Math.min(100, (average / 128) * 100);
+          
+          if (audioLevelRef.current) {
+            audioLevelRef.current.style.width = `${level}%`;
+          }
+
+          // Calculate metrics based on audio level
+          if (onMetricsUpdate) {
+            const attention = Math.max(20, Math.min(100, level + Math.random() * 20));
+            const understanding = Math.max(20, Math.min(100, level + Math.random() * 20));
+            onMetricsUpdate(attention, understanding);
+          }
+        };
+        
+        // Set up 10-second interval for metrics updates
+        if (metricsIntervalRef.current) {
+          clearInterval(metricsIntervalRef.current);
+        }
+        metricsIntervalRef.current = setInterval(updateMetrics, 10000);
+        
+        // Run the first update immediately
+        updateMetrics();
+        
+        // Continue updating audio level visualization more frequently
         const updateAudioLevel = () => {
           analyser.getByteFrequencyData(dataArray);
           const average = dataArray.reduce((acc, val) => acc + val, 0) / dataArray.length;
@@ -40,10 +69,13 @@ export function LiveTranscript({ transcript, isListening }: LiveTranscriptProps)
       .catch(err => console.error('Audio level monitoring error:', err));
       
     return () => {
+      if (metricsIntervalRef.current) {
+        clearInterval(metricsIntervalRef.current);
+      }
       cancelAnimationFrame(animationFrame);
       audioContext.close();
     };
-  }, [isListening]);
+  }, [isListening, onMetricsUpdate]);
 
   return (
     <div className="bg-[#F1F0FB] p-6 rounded-3xl">
