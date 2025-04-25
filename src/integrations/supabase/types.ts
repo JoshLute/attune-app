@@ -258,6 +258,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_session_context: {
+        Args: { session_id: string }
+        Returns: Json
+      }
       get_session_timeline: {
         Args: { p_session_id: string; p_limit?: number; p_offset?: number }
         Returns: {
