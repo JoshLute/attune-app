@@ -18,7 +18,7 @@ const backupSessionData = (data: SaveSessionHandlerProps) => {
       ...data,
       timestamp: new Date().toISOString()
     }));
-    console.log('Session data backed up to localStorage');
+    console.log('Session data backed up to localStorage', data);
   } catch (error) {
     console.error('Failed to backup session data to localStorage', error);
   }
@@ -74,21 +74,37 @@ export const useSaveSession = () => {
         throw new Error("Lesson title is required");
       }
 
-      if (transcript.length === 0 && attentionHistory.length === 0 && understandingHistory.length === 0) {
-        throw new Error("Missing recording data. Please ensure the recording captured audio and metrics.");
+      // Prepare transcript data - handle both array and single string cases
+      let processedTranscript: string[] = [];
+      if (transcript.length === 0) {
+        processedTranscript = ["No speech was detected during this recording."];
+      } else if (transcript.length === 1 && typeof transcript[0] === 'string') {
+        // If we have a single string, split it into sentences for better storage
+        const sentences = transcript[0].split(/(?<=[.!?])\s+/);
+        processedTranscript = sentences.length > 1 ? sentences : transcript;
+      } else {
+        processedTranscript = transcript;
       }
 
       // Backup data in case the save fails
-      backupSessionData({ lessonTitle, transcript, attentionHistory, understandingHistory });
+      backupSessionData({ 
+        lessonTitle, 
+        transcript: processedTranscript, 
+        attentionHistory, 
+        understandingHistory 
+      });
 
       toast.loading("Saving your session...", { id: "save-session" });
 
-      // Generate placeholder data if metrics are missing
+      // Generate placeholder metrics if missing
       const processedAttention = attentionHistory.length > 0 ? attentionHistory : [85, 80, 75];
       const processedUnderstanding = understandingHistory.length > 0 ? understandingHistory : [90, 85, 80];
-      
-      // If no transcript, add placeholder message
-      const processedTranscript = transcript.length > 0 ? transcript : ["No speech was detected during this recording."];
+
+      console.log('Calling saveSessionData with:', {
+        transcriptCount: processedTranscript.length,
+        attentionCount: processedAttention.length,
+        understandingCount: processedUnderstanding.length
+      });
 
       const { session, success } = await saveSessionData(
         lessonTitle,

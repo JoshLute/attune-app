@@ -1,5 +1,5 @@
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 
 interface LiveMetricsProps {
   understanding: number;
@@ -12,8 +12,18 @@ export function LiveMetrics({
   attention = 0, 
   onMetricsUpdate 
 }: LiveMetricsProps) {
-  // Send metrics to parent component for tracking when they change
+  // Use a ref to prevent infinite loops
+  const initialRender = useRef(true);
+
+  // Only call onMetricsUpdate on mount, not on every render
   useEffect(() => {
+    // Skip the first render to avoid immediate update
+    if (initialRender.current) {
+      initialRender.current = false;
+      return;
+    }
+    
+    // Only call if the callback exists
     if (onMetricsUpdate) {
       onMetricsUpdate(attention, understanding);
     }

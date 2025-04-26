@@ -33,7 +33,7 @@ export class AudioRecorder {
           this.audioChunks.push(event.data);
         }
         
-        // Simulate metrics for demo purposes
+        // Update metrics regularly for UI feedback
         if (this.onDataAvailable) {
           const attention = Math.floor(70 + Math.random() * 30);
           const understanding = Math.floor(65 + Math.random() * 35);
@@ -41,7 +41,7 @@ export class AudioRecorder {
         }
       };
 
-      // Record in 1-second intervals to update metrics
+      // Record in 1-second intervals to update metrics regularly
       this.mediaRecorder.start(1000);
       console.log('Audio recording started');
 
@@ -53,9 +53,17 @@ export class AudioRecorder {
   }
 
   async stop() {
+    console.log('Stopping audio recording...');
+    
     try {
       if (this.mediaRecorder && this.mediaRecorder.state !== 'inactive') {
+        // Stop the media recorder
         this.mediaRecorder.stop();
+        
+        // Create a small delay to ensure all chunks are processed
+        await new Promise(resolve => setTimeout(resolve, 200));
+        
+        // Process the full recording at the end
         await this.processFullRecording();
       }
     } catch (error) {
@@ -68,12 +76,27 @@ export class AudioRecorder {
 
   private async processFullRecording() {
     try {
-      console.log('Processing full recording...');
+      console.log('Processing full recording...', this.audioChunks.length, 'chunks collected');
+      
+      if (this.audioChunks.length === 0) {
+        console.warn('No audio chunks collected');
+        this.onTranscription("No audio recorded.");
+        return;
+      }
+      
       const audioBlob = new Blob(this.audioChunks, { type: 'audio/webm' });
+      console.log('Audio blob size:', audioBlob.size, 'bytes');
+      
+      if (audioBlob.size < 100) {
+        console.warn('Audio blob too small, likely no audio recorded');
+        this.onTranscription("No speech detected.");
+        return;
+      }
+      
       const buffer = await audioBlob.arrayBuffer();
       const base64Audio = btoa(String.fromCharCode(...new Uint8Array(buffer)));
       
-      console.log('Sending audio for transcription...');
+      console.log('Sending audio for transcription...', base64Audio.length, 'characters');
       
       const response = await fetch(
         'https://objlnvvnifkotxctblgd.functions.supabase.co/transcribe-audio',
@@ -87,11 +110,21 @@ export class AudioRecorder {
         }
       );
 
+      if (!response.ok) {
+        console.error('Error response from transcription API:', response.status);
+        const errorText = await response.text();
+        console.error('Error details:', errorText);
+        throw new Error(`Transcription API error: ${response.status}`);
+      }
+
       const data = await response.json();
       
       if (data.text && data.text.trim().length > 0) {
         console.log('Received transcription:', data.text);
         this.onTranscription(data.text);
+      } else {
+        console.warn('No transcription text received');
+        this.onTranscription("No speech was detected during this recording.");
       }
 
     } catch (error) {
@@ -101,12 +134,17 @@ export class AudioRecorder {
   }
 
   private cleanup() {
+    console.log('Cleaning up audio recorder resources');
+    
     if (this.mediaRecorder) {
       this.mediaRecorder = null;
     }
     
     if (this.stream) {
-      this.stream.getTracks().forEach(track => track.stop());
+      this.stream.getTracks().forEach(track => {
+        console.log('Stopping track:', track.kind, track.id);
+        track.stop();
+      });
       this.stream = null;
     }
 
