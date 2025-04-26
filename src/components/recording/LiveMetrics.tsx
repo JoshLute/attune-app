@@ -4,9 +4,10 @@ import React from 'react';
 interface LiveMetricsProps {
   understanding: number;
   attention: number;
+  onMetricsUpdate?: (newAttention: number, newUnderstanding: number) => void;
 }
 
-export function LiveMetrics({ understanding = 0, attention = 0 }: LiveMetricsProps) {
+export function LiveMetrics({ understanding = 0, attention = 0, onMetricsUpdate }: LiveMetricsProps) {
   return (
     <div className="bg-[#F1F0FB] p-6 rounded-3xl space-y-4">
       <h3 className="text-xl font-semibold text-[hsl(var(--attune-purple))]">Live Metrics</h3>
