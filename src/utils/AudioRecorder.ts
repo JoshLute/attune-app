@@ -3,8 +3,6 @@ export class AudioRecorder {
   private stream: MediaStream | null = null;
   private mediaRecorder: MediaRecorder | null = null;
   private audioChunks: Blob[] = [];
-  private processingChunk = false;
-  private chunkDuration = 30000; // 30 seconds per chunk
 
   constructor(
     private onTranscription: (text: string) => void,
@@ -30,13 +28,12 @@ export class AudioRecorder {
         mimeType: 'audio/webm'
       });
 
-      this.mediaRecorder.ondataavailable = async (event) => {
+      this.mediaRecorder.ondataavailable = (event) => {
         if (event.data.size > 0) {
-          // Process chunk immediately
-          await this.processAudioChunk(event.data);
+          this.audioChunks.push(event.data);
         }
         
-        // Generate metrics feedback
+        // Generate simple random metrics for UI feedback
         if (this.onMetricsUpdate) {
           const attention = Math.floor(70 + Math.random() * 30);
           const understanding = Math.floor(65 + Math.random() * 35);
@@ -44,9 +41,9 @@ export class AudioRecorder {
         }
       };
 
-      // Record in 30-second chunks
-      this.mediaRecorder.start(this.chunkDuration);
-      console.log('Audio recording started in chunk mode');
+      // Record in 1-second intervals for regular metrics updates
+      this.mediaRecorder.start(1000);
+      console.log('Audio recording started');
 
     } catch (error) {
       console.error('Failed to start recording:', error);
@@ -55,23 +52,44 @@ export class AudioRecorder {
     }
   }
 
-  private async processAudioChunk(audioBlob: Blob) {
-    if (this.processingChunk) {
-      console.log('Already processing a chunk, skipping...');
-      return;
-    }
-
-    this.processingChunk = true;
-    console.log('Processing audio chunk of size:', audioBlob.size, 'bytes');
-
+  async stop() {
+    console.log('Stopping audio recording...');
+    
     try {
-      if (audioBlob.size < 100) {
-        console.warn('Audio chunk too small, skipping');
+      if (this.mediaRecorder && this.mediaRecorder.state !== 'inactive') {
+        this.mediaRecorder.stop();
+        await new Promise(resolve => setTimeout(resolve, 200));
+        await this.processFullRecording();
+      }
+    } catch (error) {
+      console.error('Error stopping recording:', error);
+      this.onError(error instanceof Error ? error : new Error('Error stopping recording'));
+    } finally {
+      this.cleanup();
+    }
+  }
+
+  private async processFullRecording() {
+    try {
+      if (this.audioChunks.length === 0) {
+        console.warn('No audio chunks collected');
+        this.onTranscription("No audio recorded.");
         return;
       }
-
+      
+      const audioBlob = new Blob(this.audioChunks, { type: 'audio/webm' });
+      console.log('Audio blob size:', audioBlob.size, 'bytes');
+      
+      if (audioBlob.size < 100) {
+        console.warn('Audio blob too small');
+        this.onTranscription("No speech detected.");
+        return;
+      }
+      
       const buffer = await audioBlob.arrayBuffer();
       const base64Audio = btoa(String.fromCharCode(...new Uint8Array(buffer)));
+      
+      console.log('Sending audio for transcription...', base64Audio.length, 'characters');
       
       const response = await fetch(
         'https://objlnvvnifkotxctblgd.functions.supabase.co/transcribe-audio',
@@ -86,38 +104,23 @@ export class AudioRecorder {
       );
 
       if (!response.ok) {
+        console.error('Error response from transcription API:', response.status);
         throw new Error(`Transcription API error: ${response.status}`);
       }
 
       const data = await response.json();
       
       if (data.text && data.text.trim().length > 0) {
-        console.log('Received transcription for chunk:', data.text);
+        console.log('Received transcription:', data.text);
         this.onTranscription(data.text);
+      } else {
+        console.warn('No transcription text received');
+        this.onTranscription("No speech was detected during this recording.");
       }
 
     } catch (error) {
-      console.error('Error processing audio chunk:', error);
-      this.onError(error instanceof Error ? error : new Error('Failed to process audio chunk'));
-    } finally {
-      this.processingChunk = false;
-    }
-  }
-
-  async stop() {
-    console.log('Stopping audio recording...');
-    
-    try {
-      if (this.mediaRecorder && this.mediaRecorder.state !== 'inactive') {
-        this.mediaRecorder.stop();
-        // Wait for any final chunks to be processed
-        await new Promise(resolve => setTimeout(resolve, 1000));
-      }
-    } catch (error) {
-      console.error('Error stopping recording:', error);
-      this.onError(error instanceof Error ? error : new Error('Error stopping recording'));
-    } finally {
-      this.cleanup();
+      console.error('Transcription error:', error);
+      this.onError(error instanceof Error ? error : new Error('Transcription failed'));
     }
   }
 
@@ -137,6 +140,5 @@ export class AudioRecorder {
     }
 
     this.audioChunks = [];
-    this.processingChunk = false;
   }
 }
