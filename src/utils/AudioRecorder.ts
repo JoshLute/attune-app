@@ -7,7 +7,7 @@ export class AudioRecorder {
   constructor(
     private onTranscription: (text: string) => void,
     private onError: (error: Error) => void,
-    private onDataAvailable?: (attention: number, understanding: number) => void
+    private onMetricsUpdate?: (attention: number, understanding: number) => void
   ) {}
 
   async start() {
@@ -33,15 +33,15 @@ export class AudioRecorder {
           this.audioChunks.push(event.data);
         }
         
-        // Update metrics regularly for UI feedback
-        if (this.onDataAvailable) {
+        // Generate simple random metrics for UI feedback
+        if (this.onMetricsUpdate) {
           const attention = Math.floor(70 + Math.random() * 30);
           const understanding = Math.floor(65 + Math.random() * 35);
-          this.onDataAvailable(attention, understanding);
+          this.onMetricsUpdate(attention, understanding);
         }
       };
 
-      // Record in 1-second intervals to update metrics regularly
+      // Record in 1-second intervals for regular metrics updates
       this.mediaRecorder.start(1000);
       console.log('Audio recording started');
 
@@ -57,13 +57,8 @@ export class AudioRecorder {
     
     try {
       if (this.mediaRecorder && this.mediaRecorder.state !== 'inactive') {
-        // Stop the media recorder
         this.mediaRecorder.stop();
-        
-        // Create a small delay to ensure all chunks are processed
         await new Promise(resolve => setTimeout(resolve, 200));
-        
-        // Process the full recording at the end
         await this.processFullRecording();
       }
     } catch (error) {
@@ -76,8 +71,6 @@ export class AudioRecorder {
 
   private async processFullRecording() {
     try {
-      console.log('Processing full recording...', this.audioChunks.length, 'chunks collected');
-      
       if (this.audioChunks.length === 0) {
         console.warn('No audio chunks collected');
         this.onTranscription("No audio recorded.");
@@ -88,7 +81,7 @@ export class AudioRecorder {
       console.log('Audio blob size:', audioBlob.size, 'bytes');
       
       if (audioBlob.size < 100) {
-        console.warn('Audio blob too small, likely no audio recorded');
+        console.warn('Audio blob too small');
         this.onTranscription("No speech detected.");
         return;
       }
@@ -112,8 +105,6 @@ export class AudioRecorder {
 
       if (!response.ok) {
         console.error('Error response from transcription API:', response.status);
-        const errorText = await response.text();
-        console.error('Error details:', errorText);
         throw new Error(`Transcription API error: ${response.status}`);
       }
 
