@@ -13,7 +13,6 @@ serve(async (req) => {
   }
 
   try {
-    console.log("Received transcription request");
     const { audioData } = await req.json()
     
     if (!audioData) {
@@ -21,8 +20,6 @@ serve(async (req) => {
       throw new Error('No audio data provided')
     }
 
-    console.log(`Processing audio data of length: ${audioData.length}`);
-    
     // Convert base64 to binary
     const binaryString = atob(audioData);
     const bytes = new Uint8Array(binaryString.length);
@@ -30,23 +27,11 @@ serve(async (req) => {
       bytes[i] = binaryString.charCodeAt(i);
     }
     
-    // Skip if audio is too small
-    if (bytes.length < 1000) {
-      console.log("Audio data too small, likely no speech");
-      return new Response(
-        JSON.stringify({ text: "" }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
-    }
-    
     // Get OpenAI API Key from environment variable
     const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY');
     if (!OPENAI_API_KEY) {
-      console.error("OPENAI_API_KEY not configured in environment");
-      throw new Error('OpenAI API key not configured. Please set the OPENAI_API_KEY secret in your project settings.');
+      throw new Error('OpenAI API key not configured');
     }
-    
-    console.log("OpenAI API Key is configured, preparing form data");
     
     // Prepare form data for OpenAI
     const formData = new FormData()
@@ -57,56 +42,41 @@ serve(async (req) => {
 
     console.log("Sending request to OpenAI API...");
     
-    try {
-      const response = await fetch('https://api.openai.com/v1/audio/transcriptions', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${OPENAI_API_KEY}`,
-        },
-        body: formData,
-      })
-  
-      console.log(`OpenAI API response status: ${response.status}`);
-  
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error(`OpenAI API error: ${response.status} ${errorText}`);
-        
-        // Generic fallback for API errors
-        return new Response(
-          JSON.stringify({ text: "" }),
-          { 
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          }
-        )
-      }
-  
-      const result = await response.json()
-      console.log('Transcription result:', result);
-  
+    const response = await fetch('https://api.openai.com/v1/audio/transcriptions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${OPENAI_API_KEY}`,
+      },
+      body: formData,
+    })
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error(`OpenAI API error: ${response.status} ${errorText}`);
       return new Response(
-        JSON.stringify({ text: result.text }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
-    } catch (fetchError) {
-      console.error("Error calling OpenAI API:", fetchError);
-      
-      // Generic fallback for network errors
-      return new Response(
-        JSON.stringify({ text: "" }),
+        JSON.stringify({ text: "Error transcribing audio. Please try again." }),
         { 
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 500
         }
       )
     }
+
+    const result = await response.json()
+    console.log('Transcription received:', result);
+
+    return new Response(
+      JSON.stringify({ text: result.text }),
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    )
   } catch (error) {
     console.error('Error:', error);
     return new Response(
-      JSON.stringify({ text: "" }),
+      JSON.stringify({ text: "Error processing audio. Please try again." }),
       { 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 500
       }
     )
   }
 })
-

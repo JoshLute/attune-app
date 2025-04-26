@@ -12,9 +12,9 @@ export function LiveTranscript({
   transcript, 
   isListening
 }: LiveTranscriptProps) {
-  // Check for API quota exceeded message
-  const hasQuotaError = transcript.some(text => 
-    text.includes("quota exceeded") || text.includes("service unavailable")
+  const hasTranscriptionError = transcript.some(text => 
+    text.includes("Error transcribing audio") || 
+    text.includes("Error processing audio")
   );
 
   return (
@@ -32,12 +32,12 @@ export function LiveTranscript({
         )}
       </div>
       
-      {hasQuotaError && (
+      {hasTranscriptionError && (
         <div className="bg-amber-50 border border-amber-200 p-3 rounded-md mb-4 flex items-start gap-2">
           <AlertCircle className="text-amber-500 h-5 w-5 mt-0.5 flex-shrink-0" />
           <div>
             <p className="text-sm text-amber-800">
-              OpenAI API quota exceeded. Transcription is limited.
+              There was an error with the transcription. Some text may be missing.
             </p>
           </div>
         </div>
@@ -54,7 +54,9 @@ export function LiveTranscript({
             <AccordionContent className="px-3 pb-4 pt-1 max-h-60 overflow-y-auto shadow-inner bg-white rounded-b-xl">
               {transcript.length > 0 ? (
                 transcript.map((text, index) => (
-                  <p key={index} className={`py-1 border-b border-gray-100 last:border-none ${text.includes("service unavailable") ? "text-amber-600 italic" : ""}`}>
+                  <p key={index} className={`py-1 border-b border-gray-100 last:border-none ${
+                    text.includes("Error") ? "text-amber-600 italic" : ""
+                  }`}>
                     {text}
                   </p>
                 ))
