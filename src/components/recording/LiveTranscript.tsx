@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/components/ui/accordion";
-import { AlertCircle } from 'lucide-react';
+import { AlertCircle, Loader2 } from 'lucide-react';
 
 interface LiveTranscriptProps {
   transcript: string[];
@@ -37,7 +37,7 @@ export function LiveTranscript({
           <AlertCircle className="text-amber-500 h-5 w-5 mt-0.5 flex-shrink-0" />
           <div>
             <p className="text-sm text-amber-800">
-              OpenAI API quota exceeded. Transcription is limited.
+              OpenAI API quota exceeded. Please try again later or contact support.
             </p>
           </div>
         </div>
@@ -48,7 +48,7 @@ export function LiveTranscript({
           <AccordionItem value="open" className="border-none rounded-xl bg-white p-0">
             <AccordionTrigger className="px-3 py-2 rounded-xl focus:outline-none text-base font-medium text-left bg-white hover:bg-gray-100">
               {isListening ? 
-                transcript.length > 0 ? `Show Transcript (${transcript.length} entries)` : "Listening for speech..." 
+                transcript.length > 0 ? `Show Transcript (${transcript.length} entries)` : "Processing audio..." 
                 : "Not listening - click Start Recording"}
             </AccordionTrigger>
             <AccordionContent className="px-3 pb-4 pt-1 max-h-60 overflow-y-auto shadow-inner bg-white rounded-b-xl">
@@ -59,9 +59,16 @@ export function LiveTranscript({
                   </p>
                 ))
               ) : (
-                <p className="text-gray-500 italic">
-                  {isListening ? "Waiting for speech..." : "Click Start Recording to begin"}
-                </p>
+                <div className="text-gray-500 italic flex items-center gap-2 justify-center py-4">
+                  {isListening ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      <span>Processing audio...</span>
+                    </>
+                  ) : (
+                    "Click Start Recording to begin"
+                  )}
+                </div>
               )}
             </AccordionContent>
           </AccordionItem>
