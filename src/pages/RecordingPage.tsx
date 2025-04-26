@@ -1,16 +1,16 @@
-
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import { AttuneSidebar } from "@/components/sidebar/AttuneSidebar";
 import { Button } from "@/components/ui/button";
-import { useNavigate } from "react-router-dom";
-import { useToast } from "@/hooks/use-toast";
-import { useSaveSession, getBackupSessionData, clearBackupSessionData } from "@/components/recording/SaveSessionHandler";
-import { AudioRecorder } from "@/utils/AudioRecorder";
 import { SetupDialog } from "@/components/recording/SetupDialog";
 import { RecordingStudentCard } from "@/components/recording/RecordingStudentCard";
 import { LiveTranscript } from "@/components/recording/LiveTranscript";
+import { LiveMetrics } from "@/components/recording/LiveMetrics";
 import { toast } from "@/components/ui/sonner";
 import { AlertCircle } from 'lucide-react';
+import { useSaveSession } from "@/components/recording/SaveSessionHandler";
+import { AudioRecorder } from "@/utils/AudioRecorder";
+import { useNavigate } from "react-router-dom";
+import { useToast } from "@/hooks/use-toast";
 
 const RecordingPage = () => {
   const navigate = useNavigate();
@@ -20,14 +20,18 @@ const RecordingPage = () => {
   const [selectedStudent, setSelectedStudent] = useState<string | null>(null);
   const [lessonTitle, setLessonTitle] = useState('');
   const [isRecording, setIsRecording] = useState(false);
-  const [transcript, setTranscript] = useState<string[]>([]);
   const [recordingTime, setRecordingTime] = useState(0);
   const [isSaving, setIsSaving] = useState(false);
   const [isListening, setIsListening] = useState(false);
   const [audioRecorder, setAudioRecorder] = useState<AudioRecorder | null>(null);
   const [hasTranscriptionError, setHasTranscriptionError] = useState(false);
 
-  // Handle recording timer
+  const [attention, setAttention] = useState<number>(80);
+  const [understanding, setUnderstanding] = useState<number>(75);
+  const [attentionHistory, setAttentionHistory] = useState<number[]>([]);
+  const [understandingHistory, setUnderstandingHistory] = useState<number[]>([]);
+  const [transcript, setTranscript] = useState<string[]>([]);
+
   useEffect(() => {
     let timer: NodeJS.Timeout;
     if (isRecording) {
@@ -40,7 +44,6 @@ const RecordingPage = () => {
     };
   }, [isRecording]);
 
-  // Monitor transcript for API quota errors
   useEffect(() => {
     const hasQuotaError = transcript.some(text => 
       text.includes("quota exceeded") || text.includes("service unavailable")
@@ -67,10 +70,22 @@ const RecordingPage = () => {
     }
   ];
 
+  const { saveSession } = useSaveSession();
+  const activeStudent = students.find(s => s.id === selectedStudent);
+
+  const handleMetricsUpdate = (newAttention: number, newUnderstanding: number) => {
+    setAttention(newAttention);
+    setUnderstanding(newUnderstanding);
+    setAttentionHistory(prev => [...prev, newAttention]);
+    setUnderstandingHistory(prev => [...prev, newUnderstanding]);
+  };
+
   const handleStartRecording = () => {
     setIsSetupDialogOpen(false);
     setIsRecording(true);
     setTranscript([]);
+    setAttentionHistory([]);
+    setUnderstandingHistory([]);
     setHasTranscriptionError(false);
     
     sessionStorage.setItem('currentLessonTitle', lessonTitle);
@@ -90,25 +105,14 @@ const RecordingPage = () => {
         },
         (error) => {
           console.error("Recording error:", error);
-          
-          if (error.message.includes("quota") || error.message.includes("API")) {
-            toast("Transcription Limited", {
-              description: "OpenAI API quota exceeded. Recording will continue without full transcription.",
-              icon: <AlertCircle className="h-5 w-5" />,
-              duration: 10000,
-            });
-          } else {
-            showToast({
-              title: "Recording Error",
-              description: error.message,
-              variant: "destructive"
-            });
-          }
-          
-          if (!error.message.includes("quota") && !error.message.includes("API")) {
-            setIsListening(false);
-          }
-        }
+          showToast({
+            title: "Recording Error",
+            description: error.message,
+            variant: "destructive"
+          });
+          setIsListening(false);
+        },
+        handleMetricsUpdate
       );
       
       recorder.start().then(() => {
@@ -137,8 +141,6 @@ const RecordingPage = () => {
     }
   };
 
-  const { saveSession } = useSaveSession();
-  
   const handleEndSession = () => {
     if (isSaving) return;
     setIsSaving(true);
@@ -152,21 +154,20 @@ const RecordingPage = () => {
     
     console.log("Preparing to save session with:", {
       lessonTitle,
-      transcriptCount: transcript.length
+      transcriptCount: transcript.length,
+      attentionHistory,
+      understandingHistory
     });
     
-    // Updated to provide empty arrays for attention and understanding history
     saveSession({
       lessonTitle,
       transcript,
-      attentionHistory: [], // Provide empty array 
-      understandingHistory: [] // Provide empty array
+      attentionHistory,
+      understandingHistory
     }).finally(() => {
       setIsSaving(false);
     });
   };
-
-  const activeStudent = students.find(s => s.id === selectedStudent);
 
   return (
     <div className="flex h-screen bg-white">
@@ -201,22 +202,16 @@ const RecordingPage = () => {
                 </Button>
               </div>
               
-              {hasTranscriptionError && (
-                <div className="mb-4 p-3 bg-amber-50 border border-amber-200 rounded-lg flex items-center gap-3">
-                  <AlertCircle className="text-amber-500 h-5 w-5 flex-shrink-0" />
-                  <div className="text-sm text-amber-800">
-                    <p className="font-medium">OpenAI API Quota Exceeded</p>
-                    <p className="text-xs mt-0.5">
-                      Speech transcription is limited. Recording will continue normally.
-                    </p>
-                  </div>
-                </div>
-              )}
-              
               <div className="space-y-6">
                 <RecordingStudentCard 
                   student={activeStudent}
                   recordingTime={recordingTime}
+                />
+                
+                <LiveMetrics
+                  understanding={understanding}
+                  attention={attention}
+                  onMetricsUpdate={handleMetricsUpdate}
                 />
                 
                 <LiveTranscript 

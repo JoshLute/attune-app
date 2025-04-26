@@ -2,18 +2,20 @@
 export class AudioRecorder {
   private stream: MediaStream | null = null;
   private mediaRecorder: MediaRecorder | null = null;
-  private isTranscribing = false;
+  private audioChunks: Blob[] = [];
 
   constructor(
     private onTranscription: (text: string) => void,
-    private onError: (error: Error) => void
+    private onError: (error: Error) => void,
+    private onDataAvailable?: (attention: number, understanding: number) => void
   ) {}
 
   async start() {
     try {
       console.log('Starting audio recording...');
       
-      // Get microphone access
+      this.audioChunks = [];
+      
       this.stream = await navigator.mediaDevices.getUserMedia({ 
         audio: {
           echoCancellation: true,
@@ -22,28 +24,26 @@ export class AudioRecorder {
         }
       });
 
-      // Configure recorder
       this.mediaRecorder = new MediaRecorder(this.stream, {
         mimeType: 'audio/webm'
       });
 
-      this.mediaRecorder.ondataavailable = async (event) => {
+      this.mediaRecorder.ondataavailable = (event) => {
         if (event.data.size > 0) {
-          console.log(`Audio chunk captured: ${event.data.size} bytes`);
-          
-          // Skip if we're already transcribing
-          if (this.isTranscribing) {
-            console.log('Already transcribing, skipping chunk');
-            return;
-          }
-          
-          await this.transcribeAudio(event.data);
+          this.audioChunks.push(event.data);
+        }
+        
+        // Simulate metrics for demo purposes
+        if (this.onDataAvailable) {
+          const attention = Math.floor(70 + Math.random() * 30);
+          const understanding = Math.floor(65 + Math.random() * 35);
+          this.onDataAvailable(attention, understanding);
         }
       };
 
-      // Record in 3-second chunks
-      this.mediaRecorder.start(3000);
-      console.log('Audio recording started with 3-second intervals');
+      // Record in 1-second intervals to update metrics
+      this.mediaRecorder.start(1000);
+      console.log('Audio recording started');
 
     } catch (error) {
       console.error('Failed to start recording:', error);
@@ -52,14 +52,28 @@ export class AudioRecorder {
     }
   }
 
-  private async transcribeAudio(audioBlob: Blob) {
+  async stop() {
     try {
-      this.isTranscribing = true;
+      if (this.mediaRecorder && this.mediaRecorder.state !== 'inactive') {
+        this.mediaRecorder.stop();
+        await this.processFullRecording();
+      }
+    } catch (error) {
+      console.error('Error stopping recording:', error);
+      this.onError(error instanceof Error ? error : new Error('Error stopping recording'));
+    } finally {
+      this.cleanup();
+    }
+  }
 
+  private async processFullRecording() {
+    try {
+      console.log('Processing full recording...');
+      const audioBlob = new Blob(this.audioChunks, { type: 'audio/webm' });
       const buffer = await audioBlob.arrayBuffer();
       const base64Audio = btoa(String.fromCharCode(...new Uint8Array(buffer)));
-
-      console.log('Sending audio chunk for transcription');
+      
+      console.log('Sending audio for transcription...');
       
       const response = await fetch(
         'https://objlnvvnifkotxctblgd.functions.supabase.co/transcribe-audio',
@@ -73,17 +87,8 @@ export class AudioRecorder {
         }
       );
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Transcription failed');
-      }
-
       const data = await response.json();
       
-      if (data.error) {
-        throw new Error(data.error);
-      }
-
       if (data.text && data.text.trim().length > 0) {
         console.log('Received transcription:', data.text);
         this.onTranscription(data.text);
@@ -92,19 +97,11 @@ export class AudioRecorder {
     } catch (error) {
       console.error('Transcription error:', error);
       this.onError(error instanceof Error ? error : new Error('Transcription failed'));
-    } finally {
-      this.isTranscribing = false;
     }
-  }
-
-  stop() {
-    console.log('Stopping audio recorder...');
-    this.cleanup();
   }
 
   private cleanup() {
     if (this.mediaRecorder) {
-      this.mediaRecorder.stop();
       this.mediaRecorder = null;
     }
     
@@ -112,5 +109,7 @@ export class AudioRecorder {
       this.stream.getTracks().forEach(track => track.stop());
       this.stream = null;
     }
+
+    this.audioChunks = [];
   }
 }
