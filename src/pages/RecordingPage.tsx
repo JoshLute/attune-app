@@ -1,37 +1,65 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { AttuneSidebar } from "@/components/sidebar/AttuneSidebar";
 import { Button } from "@/components/ui/button";
-import { SetupDialog } from "@/components/recording/SetupDialog";
-import { RecordingStudentCard } from "@/components/recording/RecordingStudentCard";
-import { LiveTranscript } from "@/components/recording/LiveTranscript";
-import { LiveMetrics } from "@/components/recording/LiveMetrics";
-import { toast } from "@/components/ui/sonner";
-import { AlertCircle } from 'lucide-react';
-import { useSaveSession } from "@/components/recording/SaveSessionHandler";
-import { AudioRecorder } from "@/utils/AudioRecorder";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Label } from "@/components/ui/label";
 import { useNavigate } from "react-router-dom";
+import { RecordingSetup } from "@/components/recording/RecordingSetup";
+import BehaviorSidebar from "@/components/recording/BehaviorSidebar";
+import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/components/ui/accordion";
 import { useToast } from "@/hooks/use-toast";
+import { saveSessionData, generateSessionInsights } from "@/lib/api";
+import { useSaveSession } from "@/components/recording/SaveSessionHandler";
+
+type StudentStatus = 'Attentive' | 'Confused' | 'Inattentive';
+
+interface Student {
+  id: string;
+  name: string;
+  avatarUrl: string;
+}
+
+const BEHAVIOR_TAGS = [
+  "Visibly Confused",
+  "Verbal Outburst",
+  "Distracting Others"
+];
 
 const RecordingPage = () => {
   const navigate = useNavigate();
-  const { toast: showToast } = useToast();
+  const { toast } = useToast();
   const [isSetupDialogOpen, setIsSetupDialogOpen] = useState(true);
   const [setupStep, setSetupStep] = useState<'student' | 'materials' | 'recording'>('student');
   const [selectedStudent, setSelectedStudent] = useState<string | null>(null);
   const [lessonTitle, setLessonTitle] = useState('');
   const [isRecording, setIsRecording] = useState(false);
+  const [understanding, setUnderstanding] = useState(85);
+  const [attention, setAttention] = useState(90);
+  const [transcript, setTranscript] = useState<string[]>([]);
   const [recordingTime, setRecordingTime] = useState(0);
-  const [isSaving, setIsSaving] = useState(false);
-  const [isListening, setIsListening] = useState(false);
-  const [audioRecorder, setAudioRecorder] = useState<AudioRecorder | null>(null);
-  const [hasTranscriptionError, setHasTranscriptionError] = useState(false);
-
-  const [attention, setAttention] = useState<number>(80);
-  const [understanding, setUnderstanding] = useState<number>(75);
+  const [activeTag, setActiveTag] = useState<string | null>(null);
+  const [behaviorEvents, setBehaviorEvents] = useState<{ tag: string, timestamp: number }[]>([]);
   const [attentionHistory, setAttentionHistory] = useState<number[]>([]);
   const [understandingHistory, setUnderstandingHistory] = useState<number[]>([]);
-  const [transcript, setTranscript] = useState<string[]>([]);
+  const [isSaving, setIsSaving] = useState(false);
+  const prevUnderstanding = useRef(understanding);
+  const prevAttention = useRef(attention);
 
+  // For animated progress bar
+  useEffect(() => { 
+    prevUnderstanding.current = understanding;
+    // Store history for later saving
+    setUnderstandingHistory(prev => [...prev, understanding]);
+  }, [understanding]);
+  
+  useEffect(() => { 
+    prevAttention.current = attention;
+    // Store history for later saving
+    setAttentionHistory(prev => [...prev, attention]);
+  }, [attention]);
+
+  // Handle recording timer
   useEffect(() => {
     let timer: NodeJS.Timeout;
     if (isRecording) {
@@ -44,14 +72,7 @@ const RecordingPage = () => {
     };
   }, [isRecording]);
 
-  useEffect(() => {
-    const hasQuotaError = transcript.some(text => 
-      text.includes("quota exceeded") || text.includes("service unavailable")
-    );
-    
-    setHasTranscriptionError(hasQuotaError);
-  }, [transcript]);
-
+  // Mock students data
   const students = [
     {
       id: "jonathan",
@@ -70,124 +91,175 @@ const RecordingPage = () => {
     }
   ];
 
-  const { saveSession } = useSaveSession();
-  const activeStudent = students.find(s => s.id === selectedStudent);
-
-  const handleMetricsUpdate = (newAttention: number, newUnderstanding: number) => {
-    setAttention(newAttention);
-    setUnderstanding(newUnderstanding);
-    setAttentionHistory(prev => [...prev, newAttention]);
-    setUnderstandingHistory(prev => [...prev, newUnderstanding]);
-  };
-
   const handleStartRecording = () => {
     setIsSetupDialogOpen(false);
     setIsRecording(true);
-    setTranscript([]);
     setAttentionHistory([]);
     setUnderstandingHistory([]);
-    setHasTranscriptionError(false);
+    setTranscript([]);
     
+    // Store the lesson title in sessionStorage so it persists across pages
     sessionStorage.setItem('currentLessonTitle', lessonTitle);
     
-    try {
-      showToast({
-        title: "Starting Recording",
-        description: "Initializing microphone...",
+    // Simulate changing metrics over time
+    const understandingInterval = setInterval(() => {
+      setUnderstanding(prev => {
+        const change = Math.random() > 0.5 ? 5 : -5;
+        return Math.max(10, Math.min(100, prev + change));
       });
-      
-      setIsListening(true);
-      
-      const recorder = new AudioRecorder(
-        (text) => {
-          console.log("Received transcription:", text);
-          setTranscript(prev => [...prev, text]);
-        },
-        (error) => {
-          console.error("Recording error:", error);
-          showToast({
-            title: "Recording Error",
-            description: error.message,
-            variant: "destructive"
-          });
-          setIsListening(false);
-        },
-        handleMetricsUpdate
-      );
-      
-      recorder.start().then(() => {
-        showToast({
-          title: "Recording Active",
-          description: "Microphone is now active and listening",
-        });
-        setAudioRecorder(recorder);
-      }).catch(error => {
-        console.error("Failed to start recording:", error);
-        showToast({
-          title: "Microphone Access Failed",
-          description: "Please check microphone permissions and try again",
-          variant: "destructive"
-        });
-        setIsListening(false);
+    }, 5000);
+    
+    const attentionInterval = setInterval(() => {
+      setAttention(prev => {
+        const change = Math.random() > 0.5 ? 8 : -8;
+        return Math.max(20, Math.min(100, prev + change));
       });
-    } catch (error) {
-      console.error("Error initializing audio recorder:", error);
-      showToast({
-        title: "Recording Setup Failed",
-        description: "There was an error setting up audio recording",
-        variant: "destructive"
+    }, 4000);
+
+    // Simulate transcript generation
+    const phrases = [
+      "I think I understand this concept now.",
+      "Could you explain that part again?",
+      "This makes a lot more sense than before.",
+      "I'm having trouble with this section.",
+      "Oh, I see how that works now!",
+      "Wait, how does this relate to what we learned last week?",
+      "That's an interesting approach to solving the problem."
+    ];
+    
+    const transcriptInterval = setInterval(() => {
+      const randomPhrase = phrases[Math.floor(Math.random() * phrases.length)];
+      setTranscript(prev => [...prev, randomPhrase]);
+    }, 3000);
+    
+    return () => {
+      clearInterval(understandingInterval);
+      clearInterval(attentionInterval);
+      clearInterval(transcriptInterval);
+    };
+  };
+
+  // When user clicks main behavior button, open sidebar and add event
+  const handleBehaviorClick = () => {
+    const tags = [
+      "Visibly Confused",
+      "Verbal Outburst",
+      "Distracting Others"
+    ];
+    // show sidebar
+    // For simplicity, prompt for tag, but in a real UI use a dropdown, etc.
+    // For now, just cycle the tags for demo.
+    const lastEvent = behaviorEvents[behaviorEvents.length - 1];
+    let nextTagIdx = 0;
+    if (lastEvent) {
+      const lastTagIdx = tags.findIndex(t => t === lastEvent.tag);
+      nextTagIdx = (lastTagIdx + 1) % tags.length;
+    }
+    setBehaviorEvents(evts => [
+      ...evts,
+      { tag: tags[nextTagIdx], timestamp: recordingTime }
+    ]);
+  };
+
+  // Handle 3 quick click behavior buttons
+  const handleQuickBehavior = (tag: string) => {
+    setBehaviorEvents(evts => [
+      ...evts,
+      { tag, timestamp: recordingTime }
+    ]);
+
+    // Show toast notification
+    if (activeStudent) {
+      toast({
+        title: "Behavior Recorded",
+        description: `${activeStudent.name} - ${tag}`,
+        duration: 3000,
       });
-      setIsListening(false);
     }
   };
 
+  const { saveSession } = useSaveSession();
+  
   const handleEndSession = () => {
     if (isSaving) return;
     setIsSaving(true);
-    
-    if (audioRecorder) {
-      console.log("Stopping audio recorder...");
-      audioRecorder.stop();
-      setAudioRecorder(null);
-      setIsListening(false);
-    }
-    
-    console.log("Preparing to save session with:", {
-      lessonTitle,
-      transcriptCount: transcript.length,
-      attentionHistory,
-      understandingHistory
-    });
     
     saveSession({
       lessonTitle,
       transcript,
       attentionHistory,
-      understandingHistory
+      understandingHistory,
     }).finally(() => {
       setIsSaving(false);
     });
   };
+
+  const activeStudent = students.find(s => s.id === selectedStudent);
 
   return (
     <div className="flex h-screen bg-white">
       <AttuneSidebar />
       <div className="flex-1 p-8 overflow-y-auto">
         <div className="max-w-4xl mx-auto">
-          <SetupDialog 
-            isOpen={isSetupDialogOpen}
-            onOpenChange={setIsSetupDialogOpen}
-            selectedStudent={selectedStudent}
-            setSelectedStudent={setSelectedStudent}
-            onStartRecording={handleStartRecording}
-            setupStep={setupStep}
-            setSetupStep={setSetupStep}
-            lessonTitle={lessonTitle}
-            setLessonTitle={setLessonTitle}
-          />
+          {/* Setup Dialog */}
+          <Dialog open={isSetupDialogOpen} onOpenChange={setIsSetupDialogOpen}>
+            <DialogContent className="sm:max-w-md">
+              <DialogHeader>
+                <DialogTitle>
+                  {setupStep === 'student' ? 'Select Student' : 'Upload Materials'}
+                </DialogTitle>
+                <DialogDescription>
+                  {setupStep === 'student' 
+                    ? 'Select a student to track during this session.'
+                    : 'Add your curriculum or presentation materials.'
+                  }
+                </DialogDescription>
+              </DialogHeader>
+              
+              {setupStep === 'student' ? (
+                <div className="py-4">
+                  <RadioGroup value={selectedStudent || ""} onValueChange={setSelectedStudent}>
+                    {students.map((student) => (
+                      <div key={student.id} className="flex items-center space-x-3 space-y-2">
+                        <RadioGroupItem value={student.id} id={student.id} />
+                        <Label htmlFor={student.id} className="flex items-center gap-2 cursor-pointer">
+                          <div className="w-8 h-8 rounded-full overflow-hidden">
+                            <img 
+                              src={student.avatarUrl} 
+                              alt={student.name} 
+                              className="w-full h-full object-cover"
+                            />
+                          </div>
+                          <span>{student.name}</span>
+                        </Label>
+                      </div>
+                    ))}
+                  </RadioGroup>
+                  <div className="flex justify-end mt-6">
+                    <Button 
+                      disabled={!selectedStudent}
+                      onClick={() => setSetupStep('materials')}
+                      className="bg-[#9b87f5] hover:bg-[#7E69AB]"
+                    >
+                      Continue
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <RecordingSetup 
+                  onNext={handleStartRecording}
+                  onBack={() => setSetupStep('student')}
+                  onTitleChange={setLessonTitle}
+                  title={lessonTitle}
+                />
+              )}
+            </DialogContent>
+          </Dialog>
           
+          {/* Recording Session UI */}
           {isRecording && activeStudent && (
             <>
+              {/* Header */}
               <div className="flex justify-between items-center mb-6">
                 <h1 className="text-3xl font-bold text-[hsl(var(--attune-purple))]">
                   {lessonTitle || "Lesson"}
@@ -202,22 +274,110 @@ const RecordingPage = () => {
                 </Button>
               </div>
               
+              
               <div className="space-y-6">
-                <RecordingStudentCard 
-                  student={activeStudent}
-                  recordingTime={recordingTime}
-                />
-                
-                <LiveMetrics
-                  understanding={understanding}
-                  attention={attention}
-                  onMetricsUpdate={handleMetricsUpdate}
-                />
-                
-                <LiveTranscript 
-                  transcript={transcript}
-                  isListening={isListening}
-                />
+                {/* Student Card */}
+                <div className="rounded-3xl bg-[#F1F0FB] p-6 mb-4 flex flex-col space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-4">
+                      <img 
+                        src={activeStudent.avatarUrl}
+                        alt={activeStudent.name}
+                        className="h-16 w-16 rounded-full object-cover"
+                      />
+                      <div className="flex flex-col">
+                        <h3 className="text-xl font-semibold text-[hsl(var(--attune-purple))]">{activeStudent.name}</h3>
+                        {understanding < 25 && (
+                          <span className="inline-flex items-center w-fit mt-1 px-2 py-0.5 bg-red-500 text-white text-xs rounded font-semibold">Confused</span>
+                        )}
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2 text-[hsl(var(--attune-purple))]">
+                      <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2" /><path d="M12 6v6l4 2" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                      <span className="font-mono text-lg">
+                        {String(Math.floor(recordingTime / 60)).padStart(2, '0')}:{String(recordingTime % 60).padStart(2, '0')}
+                      </span>
+                    </div>
+                  </div>
+                  
+                  {/* 3 Quick Behavior Buttons */}
+                  <div className="flex gap-3">
+                    {BEHAVIOR_TAGS.map(tag => (
+                      <button
+                        type="button"
+                        key={tag}
+                        onClick={() => handleQuickBehavior(tag)}
+                        className="transition-transform duration-200 flex-1 px-4 py-3 rounded-full bg-[hsl(var(--attune-purple))] text-white font-semibold text-base shadow-md hover:scale-105 active:scale-100 focus:outline-none"
+                      >
+                        {tag}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Live Metrics */}
+                <div className="bg-[#F1F0FB] p-6 rounded-3xl space-y-4">
+                  <h3 className="text-xl font-semibold text-[hsl(var(--attune-purple))]">Live Metrics</h3>
+                  <div className="space-y-4">
+                    <div>
+                      <div className="flex justify-between mb-1">
+                        <span className="font-medium">Understanding</span>
+                        <span className="font-medium">{understanding}%</span>
+                      </div>
+                      <div className="relative h-3 bg-gray-200 rounded-full overflow-hidden">
+                        <div
+                          className="absolute left-0 top-0 h-full rounded-full bg-green-500 transition-all duration-700"
+                          style={{
+                            width: `${understanding}%`,
+                            backgroundColor: understanding < 25 ? '#ef4444' : '#22c55e',
+                            transitionProperty: "width, background-color"
+                          }}
+                        />
+                      </div>
+                    </div>
+                    <div>
+                      <div className="flex justify-between mb-1">
+                        <span className="font-medium">Attention</span>
+                        <span className="font-medium">{attention}%</span>
+                      </div>
+                      <div className="relative h-3 bg-gray-200 rounded-full overflow-hidden">
+                        <div
+                          className="absolute left-0 top-0 h-full rounded-full bg-blue-500 transition-all duration-700"
+                          style={{
+                            width: `${attention}%`,
+                            transitionProperty: "width"
+                          }}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                {/* Transcript (collapsible) */}
+                <div className="bg-[#F1F0FB] p-6 rounded-3xl">
+                  <h3 className="text-xl font-semibold text-[hsl(var(--attune-purple))] mb-4">Live Transcript</h3>
+                  <div>
+                    <div className="w-full">
+                      <Accordion type="single" collapsible defaultValue={transcript.length > 0 ? "open" : undefined}>
+                        <AccordionItem value="open" className="border-none rounded-xl bg-white p-0">
+                          <AccordionTrigger className="px-3 py-2 rounded-xl focus:outline-none text-base font-medium text-left bg-white hover:bg-gray-100">
+                            {transcript.length > 0 ? "Show Transcript" : "Waiting for speech..."}
+                          </AccordionTrigger>
+                          <AccordionContent className="px-3 pb-4 pt-1 max-h-60 overflow-y-auto shadow-inner bg-white rounded-b-xl">
+                            {transcript.length > 0 ? (
+                              transcript.map((text, index) => (
+                                <p key={index} className="py-1 border-b border-gray-100 last:border-none">
+                                  {text}
+                                </p>
+                              ))
+                            ) : (
+                              <p className="text-gray-500 italic">Waiting for speech...</p>
+                            )}
+                          </AccordionContent>
+                        </AccordionItem>
+                      </Accordion>
+                    </div>
+                  </div>
+                </div>
               </div>
             </>
           )}

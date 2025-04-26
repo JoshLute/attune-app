@@ -1,7 +1,6 @@
-
 import React, { useState } from 'react';
-import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine } from 'recharts';
-import { ChartContainer, ChartTooltip } from '@/components/ui/chart';
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, Scatter } from 'recharts';
+import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
 import { Button } from '@/components/ui/button';
 import { BookOpen } from 'lucide-react';
 
@@ -104,9 +103,7 @@ export const AnalyticsChart: React.FC<AnalyticsChartProps> = ({
                           </p>
                         ))}
                         {payload[0].payload.tag && (
-                          <p className="text-sm font-bold mt-1">
-                            Tag: {payload[0].payload.tag}
-                          </p>
+                          <p className="text-sm font-bold mt-1">Tag: {payload[0].payload.tag}</p>
                         )}
                       </div>
                     );
@@ -114,7 +111,7 @@ export const AnalyticsChart: React.FC<AnalyticsChartProps> = ({
                   return null;
                 }}
               />
-              
+              <Legend />
               {/* Areas for metrics */}
               <Area
                 type="monotone"
@@ -132,28 +129,13 @@ export const AnalyticsChart: React.FC<AnalyticsChartProps> = ({
                 fill="#ADD8E6"
                 fillOpacity={0.3}
               />
-              
-              {/* Reference lines for tags */}
-              {sessionTags.map((tag) => {
-                const tagTime = new Date(tag.timestamp).toLocaleTimeString([], { 
-                  hour: '2-digit', 
-                  minute: '2-digit' 
-                });
-                return (
-                  <ReferenceLine
-                    key={tag.id}
-                    x={tagTime}
-                    stroke="#FF6B6B"
-                    strokeDasharray="3 3"
-                    label={{ 
-                      value: tag.tag_text,
-                      position: 'top',
-                      fill: '#FF6B6B',
-                      fontSize: 12
-                    }}
-                  />
-                );
-              })}
+              {/* Scatter plot for behavior tags */}
+              <Scatter
+                name="Behaviors"
+                data={chartData.filter(d => d.tag)}
+                fill="#FF6B6B"
+                line={false}
+              />
             </AreaChart>
           </ResponsiveContainer>
         </ChartContainer>

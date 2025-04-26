@@ -45,30 +45,13 @@ export function useSessionDetails(sessionId: string) {
     retry: 3
   });
 
-  // Ensure we have valid data for each event type
-  const processedEvents = events.map(event => {
-    if (event.event_type === 'attention' || event.event_type === 'understanding') {
-      return {
-        ...event,
-        value: event.value ?? (event.event_type === 'attention' ? 80 : 75)
-      };
-    }
-    if (event.event_type === 'transcript') {
-      return {
-        ...event,
-        content: event.content || 'No transcription available for this segment'
-      };
-    }
-    return event;
-  });
-
   const refetch = () => {
     refetchEvents();
     refetchInsights();
   };
 
   return {
-    events: processedEvents,
+    events,
     insights,
     tags,
     isLoading: eventsLoading || insightsLoading || tagsLoading,

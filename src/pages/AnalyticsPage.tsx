@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { AttuneSidebar } from '@/components/sidebar/AttuneSidebar';
 import { Button } from '@/components/ui/button';
@@ -36,31 +35,27 @@ const AnalyticsPage = () => {
   // Find the selected session
   const selectedSession = sessions.find(session => session.id === selectedLessonId);
 
-  // Format events for the chart with validation and ensure default values
+  // Format events for the chart
   const analyticsData = events
     .filter(event => event.event_type === 'transcript')
     .map(event => {
-      // Format timestamp to readable time
-      const eventTime = event.timestamp ? new Date(event.timestamp) : new Date();
-      const formattedTime = eventTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-      
       // Find corresponding attention and understanding events with the nearest timestamp
       const timestamp = event.timestamp;
       const attentionEvent = events.find(e => 
         e.event_type === 'attention' && 
-        Math.abs(new Date(e.timestamp || '').getTime() - new Date(timestamp || '').getTime()) < 5000
+        Math.abs(new Date(e.timestamp).getTime() - new Date(timestamp).getTime()) < 5000
       );
       
       const understandingEvent = events.find(e => 
         e.event_type === 'understanding' && 
-        Math.abs(new Date(e.timestamp || '').getTime() - new Date(timestamp || '').getTime()) < 5000
+        Math.abs(new Date(e.timestamp).getTime() - new Date(timestamp).getTime()) < 5000
       );
 
       return {
-        timestamp: formattedTime,
-        attention: attentionEvent?.value || 80,
-        understanding: understandingEvent?.value || 75,
-        transcript: event.content || "No transcription available"
+        timestamp: new Date(timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        attention: attentionEvent?.value || 0,
+        understanding: understandingEvent?.value || 0,
+        transcript: event.content || ""
       };
     });
 
@@ -72,17 +67,7 @@ const AnalyticsPage = () => {
   };
   
   if (isLoading || detailsLoading) {
-    return (
-      <div className="flex h-screen bg-white">
-        <AttuneSidebar />
-        <div className="flex-1 p-6 flex justify-center items-center">
-          <div className="text-center">
-            <h2 className="text-xl font-semibold text-[hsl(var(--attune-purple))] mb-2">Loading analytics...</h2>
-            <p className="text-gray-500">Please wait while we fetch your session data.</p>
-          </div>
-        </div>
-      </div>
-    );
+    return <div className="flex justify-center items-center h-screen">Loading...</div>;
   }
 
   // If no sessions available, show a message with a button to start recording
@@ -105,54 +90,9 @@ const AnalyticsPage = () => {
     );
   }
 
-  // Find session start and end times with validation
+  // Find session start and end times
   const sessionStart = events.length > 0 ? events[0].timestamp : null;
   const sessionEnd = events.length > 0 ? events[events.length - 1].timestamp : null;
-
-  // Show message if no events found for the selected session
-  if (selectedLessonId && events.length === 0) {
-    return (
-      <div className="flex h-screen bg-white">
-        <AttuneSidebar />
-        <div className="flex-1 p-6">
-          <div className="max-w-7xl mx-auto">
-            <AnalyticsHeader 
-              selectedLessonId={selectedLessonId}
-              onLessonChange={(id) => {
-                setSelectedLessonId(id);
-                navigate(`/analytics?lesson=${id}`);
-              }}
-              onDownloadReport={handleDownloadReport}
-            />
-            <div className="text-center mt-12">
-              <h2 className="text-xl font-semibold text-[hsl(var(--attune-purple))] mb-2">No Data Available</h2>
-              <p className="text-gray-500">No analytics data found for this session. Try selecting a different session or start a new recording.</p>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
-  
-  // If analyticsData is empty but we have events, create some default data points
-  if (analyticsData.length === 0 && events.length > 0) {
-    // Create 5 data points spread over time
-    const startTime = new Date(sessionStart || new Date());
-    const endTime = new Date(sessionEnd || new Date());
-    const timeSpan = endTime.getTime() - startTime.getTime();
-    
-    for (let i = 0; i < 5; i++) {
-      const pointTime = new Date(startTime.getTime() + (timeSpan * i / 4));
-      analyticsData.push({
-        timestamp: pointTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-        attention: 80 - Math.floor(Math.random() * 10), // 70-80 range
-        understanding: 75 - Math.floor(Math.random() * 10), // 65-75 range
-        transcript: i === 0 ? "Session started" : 
-                  i === 4 ? "Session completed" : 
-                  `Recording at ${Math.round(i * 25)}% progress`
-      });
-    }
-  }
   
   return (
     <div className="flex h-screen bg-white">
@@ -185,8 +125,8 @@ const AnalyticsPage = () => {
             <div className="space-y-6 flex flex-col">
               <NotesSection />
               <LessonSummary
-                understanding={selectedSession?.understanding_avg || 75}
-                attention={selectedSession?.attention_avg || 80}
+                understanding={selectedSession?.understanding_avg || 0}
+                attention={selectedSession?.attention_avg || 0}
                 summary={selectedSession?.summary || "No summary available"}
                 startTime={sessionStart}
                 endTime={sessionEnd}

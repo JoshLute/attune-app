@@ -1,14 +1,13 @@
-
 import { toast } from "@/components/ui/sonner";
-import { saveSessionData } from "@/lib/api";
+import { saveSessionData, generateSessionInsights } from "@/lib/api";
 import { useNavigate } from "react-router-dom";
 import { useSessionsContext } from "@/contexts/SessionsContext";
 
 interface SaveSessionHandlerProps {
   lessonTitle: string;
   transcript: string[];
-  attentionHistory?: number[];
-  understandingHistory?: number[];
+  attentionHistory: number[];
+  understandingHistory: number[];
 }
 
 export const useSaveSession = () => {
@@ -18,14 +17,11 @@ export const useSaveSession = () => {
   const saveSession = async ({
     lessonTitle,
     transcript,
-    attentionHistory = [],
-    understandingHistory = [],
+    attentionHistory,
+    understandingHistory,
   }: SaveSessionHandlerProps) => {
     try {
-      if (!lessonTitle) {
-        throw new Error("Lesson title is required");
-      }
-
+      console.log('Starting session save...', { lessonTitle });
       toast.loading("Saving your session...", { id: "save-session" });
 
       const { session, success } = await saveSessionData(
@@ -39,16 +35,28 @@ export const useSaveSession = () => {
         throw new Error("Failed to save session data");
       }
 
+      console.log('Session saved successfully:', session);
+
+      // Generate insights for the session
+      await generateSessionInsights(session.id);
+      console.log('Insights generated for session:', session.id);
+
+      // Refetch sessions to update the UI
       await refetchSessions();
+      console.log('Sessions refetched');
+
       toast.success("Session saved successfully!", { id: "save-session" });
-      
+
+      // Store the new session ID in sessionStorage
       sessionStorage.setItem('newSessionId', session.id);
+      
+      // Navigate to analytics page
       navigate(`/analytics?lesson=${session.id}`);
 
     } catch (error) {
       console.error("Error saving session:", error);
       toast.error(
-        `Save failed: ${error instanceof Error ? error.message : "Unknown error"}`, 
+        "There was an error saving your session. Please try again.", 
         { id: "save-session" }
       );
     }

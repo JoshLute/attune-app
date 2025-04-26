@@ -2,44 +2,39 @@
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { Bot, Send, Link2 } from 'lucide-react';
+import { Bot, Send } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/components/ui/use-toast';
-import { useSessionsContext } from '@/contexts/SessionsContext';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 interface Message {
   id: string;
   content: string;
   isAI: boolean;
   timestamp: Date;
-  sessionReferences?: string[];
 }
 
 export const AIChat = () => {
   const [message, setMessage] = useState('');
-  const [selectedSession, setSelectedSession] = useState<string | null>(null);
   const [messages, setMessages] = useState<Message[]>([
     {
       id: '1',
-      content: "Hello! I'm your AI teaching assistant. I can help analyze student performance and provide insights. Select a session for context-aware responses.",
+      content: "Hello! I'm your AI assistant. I can help you analyze student data and identify trends. What would you like to know?",
       isAI: true,
       timestamp: new Date()
     }
   ]);
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
-  const { sessions } = useSessionsContext();
 
   const handleSendMessage = async () => {
     if (!message.trim()) return;
 
+    // Add user message
     const userMessage: Message = {
       id: Date.now().toString(),
       content: message,
       isAI: false,
-      timestamp: new Date(),
-      sessionReferences: selectedSession ? [selectedSession] : []
+      timestamp: new Date()
     };
 
     setMessages(prev => [...prev, userMessage]);
@@ -48,10 +43,7 @@ export const AIChat = () => {
 
     try {
       const { data, error } = await supabase.functions.invoke('ai-chat', {
-        body: { 
-          message: message.trim(),
-          sessionId: selectedSession 
-        }
+        body: { message: message.trim() }
       });
 
       if (error) throw error;
@@ -60,8 +52,7 @@ export const AIChat = () => {
         id: (Date.now() + 1).toString(),
         content: data.response,
         isAI: true,
-        timestamp: new Date(),
-        sessionReferences: selectedSession ? [selectedSession] : []
+        timestamp: new Date()
       };
 
       setMessages(prev => [...prev, aiMessage]);
@@ -77,36 +68,8 @@ export const AIChat = () => {
     }
   };
 
-  const handleSessionChange = (sessionId: string) => {
-    setSelectedSession(sessionId);
-    setMessages(prev => [
-      {
-        id: Date.now().toString(),
-        content: "Session context loaded. I now have access to the session's understanding levels, attention patterns, and teacher notes.",
-        isAI: true,
-        timestamp: new Date(),
-        sessionReferences: [sessionId]
-      }
-    ]);
-  };
-
   return (
     <div className="rounded-xl bg-gradient-to-br from-white to-[#F1F0FB] p-6 shadow-[5px_5px_15px_rgba(0,0,0,0.1),_-5px_-5px_15px_rgba(255,255,255,0.8)]">
-      <div className="mb-4">
-        <Select onValueChange={handleSessionChange}>
-          <SelectTrigger className="w-full">
-            <SelectValue placeholder="Select a session for context" />
-          </SelectTrigger>
-          <SelectContent>
-            {sessions.map((session) => (
-              <SelectItem key={session.id} value={session.id}>
-                {session.title} - {session.date}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
-
       <div className="h-[500px] flex flex-col">
         <div className="flex-1 overflow-y-auto mb-4 space-y-4">
           {messages.map((msg) => (
@@ -128,12 +91,6 @@ export const AIChat = () => {
                   </div>
                 )}
                 <p>{msg.content}</p>
-                {msg.sessionReferences && msg.sessionReferences.length > 0 && (
-                  <div className="flex items-center mt-2 text-xs text-gray-600">
-                    <Link2 className="h-3 w-3 mr-1" />
-                    <span>References session data</span>
-                  </div>
-                )}
               </div>
             </div>
           ))}
@@ -143,7 +100,7 @@ export const AIChat = () => {
           <Textarea
             value={message}
             onChange={(e) => setMessage(e.target.value)}
-            placeholder="Ask about student performance, patterns, or specific sessions..."
+            placeholder="Ask about student trends, behavior patterns, or suggestions..."
             className="min-h-[60px]"
             disabled={isLoading}
           />
