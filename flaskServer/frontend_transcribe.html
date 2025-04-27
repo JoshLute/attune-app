@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Audio Transcription</title>
+  <script>
+    // The JavaScript function with no TypeScript-specific type annotations
+    const recordAndSendAudio = async () => {
+      // Request permission to access the microphone
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const recorder = new MediaRecorder(stream);
+      const chunks = []; // Array to hold audio chunks as blobs
+
+      // When data is available, push it into the chunks array
+      recorder.ondataavailable = (e) => chunks.push(e.data);
+
+      // When the recording stops, send the audio to the server for transcription
+      recorder.onstop = async () => {
+        const blob = new Blob(chunks, { type: 'audio/webm' }); // ✅ Correct MIME type
+        const formData = new FormData();
+        formData.append('audio', blob, 'audio.webm');          // ✅ Use the matching extension 
+        // formData.append('audio', blob, 'audio.wav');
+        // formData.append('Access-Control-Allow-Origin', "*")
+
+        try {
+          // Send the audio to the Flask server for transcription
+          const res = await fetch('http://localhost:5001/transcribe', {
+            method: 'POST',
+            body: formData,
+          });
+          const data = await res.json();
+          
+          // Display the transcription result
+          document.getElementById('transcription').innerText = `Transcription: ${data.transcription || 'Could not understand the audio'}`;
+        } catch (err) {
+          console.error('Error sending audio:', err);
+          document.getElementById('transcription').innerText = 'Error occurred while transcribing';
+        }
+      };
+
+      // Start recording
+      recorder.start();
+      console.log('Recording...');
+      
+      // Stop recording after 10 seconds
+      setTimeout(() => {
+        recorder.stop();
+        console.log('Stopped recording');
+      }, 10_000); // 10 seconds
+    };
+  </script>
+</head>
+<body>
+  <h1>Audio Transcription Demo</h1>
+  <button onclick="recordAndSendAudio()">Start Recording</button>
+  <p id="transcription">Transcription will appear here</p>
+</body>
+</html>

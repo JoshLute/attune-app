@@ -39,7 +39,7 @@ export const SharedNotes = () => {
     const note: Note = {
       id: Date.now().toString(),
       content: newNote,
-      author: "Dr. Smith",
+      author: "Dr. Lute",
       timestamp: new Date(),
       role: 'therapist'
     };

@@ -28,10 +28,10 @@ def append_to_csv(row):
         file_path (str): The path to the CSV file.
         row (list): A list of values representing a row to append.
     """
+    print(row)
     with open(csv_path, mode='a', newline='') as file:
         writer = csv.writer(file)
         writer.writerow(row)
-
 
 
 def transform_set(scalar, data, fit=False):
@@ -56,6 +56,7 @@ def set_scalar(student_id):
     # To load the data back
     with open(f'models/X_scalar_{student_id}.pckl', 'rb') as file:
         print(f'using models/X_scalar_{student_id}.pckl')
+        global X_scalar
         X_scalar = pickle.load(file)
 
 def set_csv(student_id, lesson):
@@ -63,7 +64,7 @@ def set_csv(student_id, lesson):
     global csv_path
     csv_path = f"results/{student_id}_{lesson}.csv"
     if not os.path.isfile(csv_path):
-        create_csv_with_header(csv_path, ['timestamp', 'confused', 'control', 'understanding'])
+        create_csv_with_header(csv_path, ['timestamp', 'confused', 'control', 'understanding', 'transcript'])
 
 
 
@@ -73,8 +74,8 @@ def set_model(student_id):
     pass
 
 
-# import tensorflow.keras as keras
-# model = keras.models.load_model('models/jp.keras', custom_objects=None, compile=True, safe_mode=True)
+import tensorflow.keras as keras
+model = keras.models.load_model('models/jp.keras', custom_objects=None, compile=True, safe_mode=True)
 
 
 def inference(sample_queue, timestamp_queue):
@@ -82,7 +83,6 @@ def inference(sample_queue, timestamp_queue):
     # eeg_buffer = np.expand_dims(eeg_buffer, axis=0)
     sample_queue = np.array(sample_queue)
     timestamp = timestamp_queue[-1]
-
     # print(sample_queue.shape)
     if sample_queue.shape[0]<=1:
         return np.zeros((3))
@@ -92,8 +92,8 @@ def inference(sample_queue, timestamp_queue):
     samples = sample_queue[:,:,:4]
 
     window = transform_set(X_scalar, samples, fit=False)
-    # preds = model.predict(window)
-    preds = [1,2,3]
+    preds = model.predict(window)
+    # preds = [1,2,3]
 
 
     avg = np.average(preds, axis=0)

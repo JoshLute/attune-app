@@ -32,6 +32,7 @@ timestamp_queue = []
 record = False
 
 def record_data():
+    print("STARTING RECORDING")
     # Length of the EEG data buffer (in seconds)
     # This buffer will hold last n seconds of data and be used for calculations
     BUFFER_LENGTH = 1
@@ -96,7 +97,8 @@ def record_data():
 
 
             eeg_queue.append(eeg_buffer)
-            timestamp.append(timestamp[-1])
+            timestamp_queue.append(timestamp[-1])
+            # print(timestamp)
             if len(eeg_queue) > 10:
                 timestamp.pop(0)
                 eeg_queue.pop(0)
@@ -104,3 +106,8 @@ def record_data():
 
     except KeyboardInterrupt:
         print('Closing!')
+
+
+if __name__ == "__main__":
+    record = True
+    record_data()

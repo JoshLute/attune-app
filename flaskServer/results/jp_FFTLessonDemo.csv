@@ -1,0 +1,15 @@
+timestamp,confused,control,understanding,transcript
+1745732176.7036915,5,0,94,-
+1745732183.476768,17,19,63,"Okay, go ahead and start, Josh. Hello."
+1745732190.6483312,51,35,12,Hello. So the thing that we're going to talk about is Fourier Transforms. Fourier Transforms work by decomposing...
+1745732197.8192692,40,12,46,"Fourier transforms work by decomposing, all right so a Fourier transform takes any periodic signal and decomposes it into"
+1745732205.7876155,11,1,87,takes any periodic signal and decomposes it into a fundamental frequency based on sinusoidal waves. We use sine and cosine to account for phase shift.
+1745732212.759849,13,0,86,"We use sine and cosine to account for phase shift where you take the dot product of the sine, the dot product of the cosine, and then you do the distance formula to find that."
+1745732219.9308448,9,0,90,"And then you do the distance formula to find that. So it's based off of Euler's identity, which is e to the i pi 2 pi f t minus i sine, where this is the real component."
+1745732226.9030223,6,1,92,"pi 2 pi f t minus i sine, where this is the real component and the imaginary component. If you take the fundamental frequency and then the distance time, and then."
+1745732233.8749495,7,0,91,"We take the fundamental frequency, and then the distance time, and then the time times the number of samples times the distance of time, then you get the full length, and that's the sampling frequency."
+1745732240.8469558,6,0,92,the distance of time then you get the full length and that's the sampling frequency. You can then take that and then get the fundamental frequency.
+1745732246.8227897,10,0,89,"get the fundamental frequency. All right, Josh, I'm going to pass it to you. Thank you, Cooper. Now that we've finished the lesson, let's see how we did."
+1745732253.7945042,5,0,94,"Now that we've finished the lesson, let's see how we did. So you can see that there's a transcript of everything that I've been saying, talking about Fourier."
+1745732260.56709,13,0,85,"of everything that I've been saying, talking about Fourier transforms and you can see the live metrics showing how J.P. has been understanding and how he's been confused."
+1745732261.3638844,13,0,85,"sorry, how JP has been understanding and how he's been confused. Let's end the session. If we go to that lesson, we can see that his understanding..."

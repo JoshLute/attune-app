@@ -343,7 +343,8 @@ const AnalyticsPage = () => {
             <div className="flex flex-col sm:flex-row items-center gap-2">
               <LessonSwitcher
                 value={selectedLessonId}
-                onChange={setSelectedLessonId}
+                onChange={()=>{return "ok"}}
+                lessons = {['apple']}
               />
               <Button 
                 onClick={handleDownloadReport} 
@@ -439,7 +440,7 @@ const AnalyticsPage = () => {
 
             {/* Sidebar column (Notes and then LessonSummary) */}
             <div className="space-y-6 flex flex-col">
-              <NotesSection />
+              {/* <NotesSection /> */}
               <LessonSummary
                 understanding={understandingAvg}
                 attention={attentionAvg}

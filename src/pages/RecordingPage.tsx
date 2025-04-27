@@ -11,6 +11,7 @@ import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/
 import { useToast } from "@/hooks/use-toast";
 import axios from 'axios';
 
+const interval_time = 7*1000;
 
 type StudentStatus = 'Attentive' | 'Confused' | 'Inattentive';
 
@@ -43,14 +44,80 @@ const RecordingPage = () => {
   const [behaviorEvents, setBehaviorEvents] = useState<{ tag: string, timestamp: number }[]>([]);
   const prevUnderstanding = useRef(understanding);
   const prevAttention = useRef(confusion);
+  const inferenceIntervalRef = useRef(null);
+  const transcriptRef = useRef<string[]>(transcript);
+  // const transcriptIntervalRef = useRef(null);
 
   // For animated progress bar
   useEffect(() => { prevUnderstanding.current = understanding }, [understanding]);
   useEffect(() => { prevAttention.current = confusion }, [confusion]);
 
+
+
+  const getInferenceAndTranscript = async (): Promise<void> => {
+    try {
+      const stream: MediaStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const recorder: MediaRecorder = new MediaRecorder(stream);
+      const chunks: BlobPart[] = [];
+  
+      recorder.ondataavailable = (event: BlobEvent): void => {
+        chunks.push(event.data);
+      };
+  
+      recorder.onstop = async (): Promise<void> => {
+        const blob: Blob = new Blob(chunks, { type: 'audio/webm' });
+        const formData: FormData = new FormData();
+        formData.append('audio', blob, 'audio.webm');
+  
+        try {
+          const response = await axios.post('http://localhost:5001/transcribe', formData, {
+            headers: {
+              'Content-Type': 'multipart/form-data'
+            }
+          });
+  
+          const transcription = response.data.transcription || 'No speech detected';
+          const understanding = response.data.understanding;
+          const confusion = response.data.confusion;
+          const control = response.data.control;
+          console.log(understanding, confusion, control)
+
+          setUnderstanding(understanding);
+          setConfusion(confusion);
+          setControl(control);
+          // console.log(transcription);
+          // setTranscript(transcriptRef+' '+transcription);
+          transcriptRef.current.push(transcription)
+  
+        } catch (error) {
+          console.error('Error sending audio:', error);
+          const transcriptionElement = document.getElementById('transcription');
+          if (transcriptionElement) {
+            transcriptionElement.innerText = 'Error occurred while transcribing';
+          }
+        }
+      };
+  
+      recorder.start();
+      console.log('Recording...');
+  
+      setTimeout(() => {
+        recorder.stop();
+        console.log('Stopped recording');
+      }, 10_000); // Stop after 10 seconds
+  
+    } catch (error) {
+      console.error('Microphone access error:', error);
+    }
+  };
+
+
+
   // Handle recording timer
   useEffect(() => {
     let timer: NodeJS.Timeout;
+    transcriptRef.current = transcript
+
     if (isRecording) {
       timer = setInterval(() => {
         setRecordingTime(prev => prev + 1);
@@ -59,7 +126,7 @@ const RecordingPage = () => {
     return () => {
       if (timer) clearInterval(timer);
     };
-  }, [isRecording]);
+  }, [isRecording, transcript]);
 
   // Mock students data
   const students = [
@@ -81,7 +148,8 @@ const RecordingPage = () => {
   ];
 
 
-  async function sendInferenceRequest() {
+  // NOTE: transcript and inference requests are now one
+  /*async function sendInferenceRequest() {
     const data = {
       value: 'Some data to send',
     };
@@ -98,11 +166,13 @@ const RecordingPage = () => {
     } catch (error) {
       console.error('Error making POST request:', error);
     }
-  };
+  };*/
 
   async function sendStartRequest() {
     const data = {
       status: "start",
+      student_id: selectedStudent,
+      lesson: lessonTitle
     };
     let response = await axios.post('http://localhost:5001/recordingStatus', data);
     console.log(response.data.recording_status);
@@ -111,44 +181,53 @@ const RecordingPage = () => {
   async function sendEndRequest() {
     const data = {
       status: "end",
+      student_id: selectedStudent,
+      transcript: transcriptRef.current,
+      lesson: lessonTitle
     };
     let response = await axios.post('http://localhost:5001/recordingStatus', data);
     console.log(response.data.recording_status);
   }
 
 
+  // TODO: Get rid of this later
+  // NOTE: we'll just use the transcriptRef.current to get the list
+  /*const full_transcript = [
+    "I think I understand this concept now.",
+    "Could you explain that part again?",
+    "This makes a lot more sense than before.",
+    "I'm having trouble with this section.",
+    "Oh, I see how that works now!",
+    "Wait, how does this relate to what we learned last week?",
+    "That's an interesting approach to solving the problem."
+  ];*/
+
+
   const handleStartRecording = async () => {
     setIsSetupDialogOpen(false);
     setIsRecording(true);
+    await getInferenceAndTranscript()
     await sendStartRequest();
+
+
+    inferenceIntervalRef.current = setInterval(() => {
+      // sendInferenceRequest();
+      getInferenceAndTranscript();
+
+    }, interval_time);
+  
+    /*transcriptIntervalRef.current = setInterval(() => {
+      const randomPhrase = phrases[Math.floor(Math.random() * phrases.length)];
+      setTranscript(prev => [...prev, randomPhrase]);
+    }, interval_time);*/
 
     // Store the lesson title in sessionStorage so it persists across pages
     sessionStorage.setItem('currentLessonTitle', lessonTitle);
-    
-    // Simulate changing metrics over time
-    const inferenceInterval = setInterval(() => {
-      sendInferenceRequest();
-    }, 4000);
 
-    // Simulate transcript generation
-    const phrases = [
-      "I think I understand this concept now.",
-      "Could you explain that part again?",
-      "This makes a lot more sense than before.",
-      "I'm having trouble with this section.",
-      "Oh, I see how that works now!",
-      "Wait, how does this relate to what we learned last week?",
-      "That's an interesting approach to solving the problem."
-    ];
-    
-    const transcriptInterval = setInterval(() => {
-      const randomPhrase = phrases[Math.floor(Math.random() * phrases.length)];
-      setTranscript(prev => [...prev, randomPhrase]);
-    }, 3000);
     
     return () => {
-      clearInterval(inferenceInterval);
-      clearInterval(transcriptInterval);
+      clearInterval(inferenceIntervalRef.current);
+      // clearInterval(transcriptIntervalRef.current);
     };
   };
 
@@ -191,8 +270,12 @@ const RecordingPage = () => {
     }
   };
 
-  const handleEndSession = () => {
-    navigate("/analytics");
+  const handleEndSession = async () => {
+    console.log(inferenceIntervalRef.current);
+    clearInterval(inferenceIntervalRef.current);
+    // clearInterval(transcriptIntervalRef.current);
+    await sendEndRequest();
+    navigate("/student/"+activeStudent.id);
   };
 
   const activeStudent = students.find(s => s.id === selectedStudent);
@@ -351,11 +434,11 @@ const RecordingPage = () => {
                       </div>
                     </div>
 
-                  <div className="flex justify-between mb-1">
+                  {/* <div className="flex justify-between mb-1">
                       <span className="font-medium">Other</span>
                       <span className="font-medium">{control}%</span>
-                    </div>
-                    <div className="relative h-3 bg-gray-200 rounded-full overflow-hidden">
+                    </div> */}
+                    {/* <div className="relative h-3 bg-gray-200 rounded-full overflow-hidden">
                         <div
                           className="absolute left-0 top-0 h-full rounded-full bg-red-500 transition-all duration-700"
                           style={{
@@ -363,7 +446,7 @@ const RecordingPage = () => {
                             transitionProperty: "width"
                           }}
                         />
-                      </div>
+                      </div> */}
                     </div>
                 </div>
                 {/* Transcript (collapsible) */}

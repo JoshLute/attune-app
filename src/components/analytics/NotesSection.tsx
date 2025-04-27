@@ -4,82 +4,75 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { LessonSummary } from '@/components/analytics/LessonSummary';
+import { Progress } from "@/components/ui/progress";
 
-interface Note {
+/*interface Note {
   id: string;
   content: string;
   timestamp: Date;
-}
+}*/
 
-export function NotesSection() {
-  const [notes, setNotes] = useState<Note[]>([
-    {
-      id: '1',
-      content: "Remember: Johnny prefers to be called on only when he raises his hand.",
-      timestamp: new Date('2024-04-20T14:30:00'),
-    },
-    {
-      id: '2',
-      content: "Overall good engagement during the photosynthesis lesson. Visual aids were particularly effective.",
-      timestamp: new Date('2024-04-20T15:15:00'),
-    }
-  ]);
-  const [newNote, setNewNote] = useState('');
-  const { toast } = useToast();
+export type Note = {
+  id: number;
+  content: string;
+  state: string;
+  color: string;
+  score: number;
+};
 
-  const MAX_NOTES = 5; // Limit the number of notes
+const stateColors: Record<string, string> = {
+  "Understanding": "text-green-400 font-mono",
+  "Confused": "text-red-400 font-mono",
+  "Control": "text-blue-400 font-mono",
+  "Default": "text-gray-600",
+};
 
-  const handleAddNote = () => {
-    if (!newNote.trim()) return;
 
-    const note: Note = {
-      id: Date.now().toString(),
-      content: newNote,
-      timestamp: new Date(),
-    };
+type NotesSectionProps = {
+  notes: Note[];
+  setNotes: React.Dispatch<React.SetStateAction<Note[]>>;
+  understanding: number;
+  setUnderstanding: React.Dispatch<React.SetStateAction<number>>;
+  attention: number;
+  setAttention: React.Dispatch<React.SetStateAction<number>>;
+};
 
-    // Keep only the most recent MAX_NOTES
-    const updatedNotes = [note, ...notes].slice(0, MAX_NOTES);
+export function NotesSection({ notes, setNotes , understanding, setUnderstanding, attention, setAttention}: NotesSectionProps) {
 
-    setNotes(updatedNotes);
-    setNewNote('');
-    toast({
-      title: "Note Added",
-      description: "Your note has been saved successfully.",
-    });
-  };
 
-  const handleDeleteNote = (id: string) => {
-    setNotes(notes.filter(note => note.id !== id));
-    toast({
-      title: "Note Deleted",
-      description: "The note has been removed.",
-    });
-  };
+  const understandingColor = "#1E90FF"; // blue
+  const attentionColor = "#22c55e"; // green
 
   return (
     <div className="rounded-3xl p-6 bg-gray-50 shadow-[5px_5px_15px_rgba(0,0,0,0.05),_-5px_-5px_15px_rgba(255,255,255,0.8)]">
       <div className="flex items-center mb-4">
         <FileText className="mr-2 text-[hsl(var(--attune-purple))]" />
-        <h2 className="text-xl font-semibold text-[hsl(var(--attune-purple))]">Session Notes</h2>
+        <h2 className="text-xl font-semibold text-[hsl(var(--attune-purple))]">Notable Moments</h2>
       </div>
-      
-      <Textarea
-        value={newNote}
-        onChange={(e) => setNewNote(e.target.value)}
-        placeholder="Add a note about the session..."
-        className="mb-2"
-      />
-      
-      <Button 
-        onClick={handleAddNote} 
-        className="w-full mb-4"
-      >
-        <Plus className="mr-2 h-4 w-4" />
-        Add Note
-      </Button>
 
-      <ScrollArea className="h-[200px] w-full">
+       {/* <LessonSummary
+          understanding={10}
+          attention={20}
+          summary={"EYAH"}
+        /> */}
+
+      <ScrollArea className="h-[400px] w-full">
+        <span className="text-base text-gray-600">Understanding</span>
+                <div className="relative h-4 bg-gray-200 rounded-full overflow-hidden mb-3">
+                  <Progress value={understanding} indicatorColor={understandingColor} className="h-4 bg-gray-200 transition-all duration-300" />
+                </div>
+                {/* <div className="flex justify-end text-sm text-gray-600 mb-1">{understanding}%</div> */}
+        
+                <span className="text-base text-gray-600">Attention</span>
+                <div className="relative h-4 bg-gray-200 rounded-full overflow-hidden mb-3">
+                  <Progress value={attention} indicatorColor={attentionColor} className="h-4 bg-gray-200 transition-all duration-300" />
+                </div>
+                {/* <div className="flex justify-end text-sm text-gray-600 mb-1">{attention}%</div> */}
+
+
+
+
         <div className="space-y-3 pr-4">
           {notes.map((note) => (
             <div 
@@ -88,18 +81,10 @@ export function NotesSection() {
             >
               <div className="flex-grow">
                 <p className="text-sm text-gray-700 mb-1">{note.content}</p>
-                <p className="text-xs text-gray-500">
-                  {note.timestamp.toLocaleDateString()} at {note.timestamp.toLocaleTimeString()}
-                </p>
+                <p className={stateColors[note.state]}>{note.state} {note.score}%</p>
+                
               </div>
-              <Button 
-                variant="ghost" 
-                size="icon" 
-                className="ml-2 hover:bg-red-50"
-                onClick={() => handleDeleteNote(note.id)}
-              >
-                <Trash2 className="h-4 w-4 text-red-500" />
-              </Button>
+
             </div>
           ))}
         </div>
