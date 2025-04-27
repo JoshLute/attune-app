@@ -25,5 +25,5 @@ python flaskServer/app.py
 python flaskServer/start_stream.py
 ```
 
-### Be aware that this repository uses the OpenAI api for whisper and gpt-3.5-turbo; we have left the api_keys blank for security purposes
+### Be aware that this repository uses the OpenAI api for whisper and gpt-3.5-turbo; we have left the api keys blank for security purposes
 These will need to be filled in at the top of `flaskServer/app.py` and `src/componts/collaboration/AIChat.tsx`
