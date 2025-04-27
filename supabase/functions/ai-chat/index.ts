@@ -21,6 +21,8 @@ serve(async (req) => {
       throw new Error('OPENAI_API_KEY is not set')
     }
 
+    console.log("Sending request to OpenAI API with message:", message)
+    
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -42,7 +44,19 @@ serve(async (req) => {
       }),
     })
 
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}))
+      console.error("OpenAI API Error:", response.status, errorData)
+      throw new Error(`OpenAI API responded with status ${response.status}: ${JSON.stringify(errorData)}`)
+    }
+
     const data = await response.json()
+    console.log("Received response from OpenAI API")
+    
+    if (!data.choices || !data.choices[0] || !data.choices[0].message) {
+      console.error("Unexpected response format:", data)
+      throw new Error("Invalid response format from OpenAI API")
+    }
     
     return new Response(
       JSON.stringify({ response: data.choices[0].message.content }),
@@ -61,4 +75,3 @@ serve(async (req) => {
     )
   }
 })
-
