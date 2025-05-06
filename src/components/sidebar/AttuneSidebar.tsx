@@ -7,6 +7,7 @@ import { SidebarSection } from './SidebarSection';
 import { ProfileSection } from './ProfileSection';
 import { Home, FileText, BarChart, Settings } from 'lucide-react';
 import { useLocation } from 'react-router-dom';
+import { ThemeToggle } from '../theme/ThemeToggle';
 
 export function AttuneSidebar() {
   const location = useLocation();
@@ -38,11 +39,14 @@ export function AttuneSidebar() {
   ];
 
   return (
-    <aside className="w-64 h-screen bg-gray-50 border-r border-purple-100 flex flex-col shadow-[5px_0_15px_rgba(0,0,0,0.05)]">
+    <aside className="w-64 h-screen bg-gray-50 dark:bg-gray-900 border-r border-purple-100 dark:border-purple-900 flex flex-col shadow-[5px_0_15px_rgba(0,0,0,0.05)] dark:shadow-[5px_0_15px_rgba(0,0,0,0.3)]">
       {/* Header */}
-      <div className="p-4 flex items-center">
-        <AttuneIcon />
-        <h1 className="ml-2 text-xl font-bold text-[hsl(var(--attune-purple))]">Attune</h1>
+      <div className="p-4 flex items-center justify-between">
+        <div className="flex items-center">
+          <AttuneIcon />
+          <h1 className="ml-2 text-xl font-bold text-[hsl(var(--attune-purple))]">Attune</h1>
+        </div>
+        <ThemeToggle />
       </div>
 
       {/* Main content */}

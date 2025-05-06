@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, Scatter } from 'recharts';
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
@@ -40,14 +41,14 @@ export const AnalyticsChart: React.FC<AnalyticsChartProps> = ({
   }));
 
   return (
-    <div className="rounded-3xl p-6 bg-gray-50 shadow-[5px_5px_15px_rgba(0,0,0,0.05),_-5px_-5px_15px_rgba(255,255,255,0.8)]">
+    <div className="rounded-3xl p-6 bg-gray-50 dark:bg-gray-900 neumorphic">
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center">
           <BookOpen className="mr-2 text-[hsl(var(--attune-purple))]" />
           <h2 className="text-xl font-semibold text-[hsl(var(--attune-purple))]">{sessionTitle}</h2>
         </div>
         <div className="flex items-center gap-2">
-          <div className="flex rounded-lg overflow-hidden shadow-[2px_2px_5px_rgba(0,0,0,0.08)]">
+          <div className="flex rounded-lg overflow-hidden shadow-[2px_2px_5px_rgba(0,0,0,0.08)] dark:shadow-[2px_2px_5px_rgba(0,0,0,0.2)]">
             <Button
               variant={timeRange === 'today' ? 'default' : 'outline'}
               className={`rounded-r-none border-r-0 ${timeRange === 'today' ? 'bg-[hsl(var(--attune-purple))]' : ''}`}
@@ -89,13 +90,13 @@ export const AnalyticsChart: React.FC<AnalyticsChartProps> = ({
               margin={{ top: 10, right: 30, left: 0, bottom: 0 }}
             >
               <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="timestamp" />
-              <YAxis tickFormatter={(value) => `${Math.round(value)}%`} />
+              <XAxis dataKey="timestamp" stroke="currentColor" />
+              <YAxis tickFormatter={(value) => `${Math.round(value)}%`} stroke="currentColor" />
               <ChartTooltip 
                 content={({ active, payload }) => {
                   if (active && payload && payload.length) {
                     return (
-                      <div className="bg-white p-2 border rounded shadow">
+                      <div className="bg-white dark:bg-gray-800 p-2 border rounded shadow">
                         <p className="text-sm">{payload[0].payload.timestamp}</p>
                         {payload.map((p: any, i: number) => (
                           <p key={i} className="text-sm">
