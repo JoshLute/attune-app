@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { AttuneSidebar } from '@/components/sidebar/AttuneSidebar';
 import { Button } from '@/components/ui/button';
@@ -68,18 +67,18 @@ const AnalyticsPage = () => {
   };
   
   if (isLoading || detailsLoading) {
-    return <div className="flex justify-center items-center h-screen bg-white dark:bg-gray-900 text-gray-800 dark:text-gray-200">Loading...</div>;
+    return <div className="flex justify-center items-center h-screen">Loading...</div>;
   }
 
   // If no sessions available, show a message with a button to start recording
   if (sessions.length === 0) {
     return (
-      <div className="flex h-screen bg-white dark:bg-gray-900">
+      <div className="flex h-screen bg-white">
         <AttuneSidebar />
         <div className="flex-1 p-6 flex justify-center items-center">
           <div className="text-center space-y-6">
             <h1 className="text-2xl font-bold mb-2 text-[hsl(var(--attune-purple))]">No sessions available</h1>
-            <p className="text-gray-600 dark:text-gray-400 mb-6">Record your first session to see analytics</p>
+            <p className="text-gray-600 mb-6">Record your first session to see analytics</p>
             <Link to="/recording">
               <Button className="bg-[hsl(var(--attune-purple))] hover:bg-[hsl(var(--attune-dark-purple))] text-lg py-6 px-8">
                 Start Your First Recording
@@ -96,7 +95,7 @@ const AnalyticsPage = () => {
   const sessionEnd = events.length > 0 ? events[events.length - 1].timestamp : null;
   
   return (
-    <div className="flex h-screen bg-white dark:bg-gray-900">
+    <div className="flex h-screen bg-white">
       <AttuneSidebar />
       <div className="flex-1 p-6 overflow-y-auto">
         <div className="max-w-7xl mx-auto">

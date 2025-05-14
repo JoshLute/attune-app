@@ -188,44 +188,6 @@ export type Database = {
           },
         ]
       }
-      session_timeline: {
-        Row: {
-          attention_score: number | null
-          content: string | null
-          created_at: string
-          id: string
-          session_id: string
-          timestamp: string
-          understanding_score: number | null
-        }
-        Insert: {
-          attention_score?: number | null
-          content?: string | null
-          created_at?: string
-          id?: string
-          session_id: string
-          timestamp: string
-          understanding_score?: number | null
-        }
-        Update: {
-          attention_score?: number | null
-          content?: string | null
-          created_at?: string
-          id?: string
-          session_id?: string
-          timestamp?: string
-          understanding_score?: number | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "session_timeline_session_id_fkey"
-            columns: ["session_id"]
-            isOneToOne: false
-            referencedRelation: "sessions"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       sessions: {
         Row: {
           attention_avg: number | null
@@ -258,20 +220,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      get_session_context: {
-        Args: { session_id: string }
-        Returns: Json
-      }
-      get_session_timeline: {
-        Args: { p_session_id: string; p_limit?: number; p_offset?: number }
-        Returns: {
-          timeline_id: string
-          event_timestamp: string
-          event_content: string
-          event_attention_score: number
-          event_understanding_score: number
-        }[]
-      }
+      [_ in never]: never
     }
     Enums: {
       [_ in never]: never

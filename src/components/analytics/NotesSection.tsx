@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { FileText, Plus, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -59,7 +58,7 @@ export function NotesSection() {
   };
 
   return (
-    <div className="rounded-3xl p-6 bg-gray-50 dark:bg-gray-900 neumorphic">
+    <div className="rounded-3xl p-6 bg-gray-50 shadow-[5px_5px_15px_rgba(0,0,0,0.05),_-5px_-5px_15px_rgba(255,255,255,0.8)]">
       <div className="flex items-center mb-4">
         <FileText className="mr-2 text-[hsl(var(--attune-purple))]" />
         <h2 className="text-xl font-semibold text-[hsl(var(--attune-purple))]">Session Notes</h2>
@@ -69,7 +68,7 @@ export function NotesSection() {
         value={newNote}
         onChange={(e) => setNewNote(e.target.value)}
         placeholder="Add a note about the session..."
-        className="mb-2 dark:bg-gray-800 dark:text-gray-300"
+        className="mb-2"
       />
       
       <Button 
@@ -85,21 +84,21 @@ export function NotesSection() {
           {notes.map((note) => (
             <div 
               key={note.id} 
-              className="rounded-xl py-3 px-4 bg-white dark:bg-gray-800 border border-purple-100 dark:border-purple-900 neumorphic-pressed flex items-start"
+              className="rounded-xl py-3 px-4 bg-white border border-purple-100 shadow-[2px_2px_5px_rgba(0,0,0,0.05),_-2px_-2px_5px_rgba(255,255,255,0.8)] flex items-start"
             >
               <div className="flex-grow">
-                <p className="text-sm text-gray-700 dark:text-gray-300 mb-1">{note.content}</p>
-                <p className="text-xs text-gray-500 dark:text-gray-400">
+                <p className="text-sm text-gray-700 mb-1">{note.content}</p>
+                <p className="text-xs text-gray-500">
                   {note.timestamp.toLocaleDateString()} at {note.timestamp.toLocaleTimeString()}
                 </p>
               </div>
               <Button 
                 variant="ghost" 
                 size="icon" 
-                className="ml-2 hover:bg-red-50 dark:hover:bg-red-900/20"
+                className="ml-2 hover:bg-red-50"
                 onClick={() => handleDeleteNote(note.id)}
               >
-                <Trash2 className="h-4 w-4 text-red-500 dark:text-red-400" />
+                <Trash2 className="h-4 w-4 text-red-500" />
               </Button>
             </div>
           ))}

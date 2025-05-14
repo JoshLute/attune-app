@@ -37,25 +37,25 @@ const getStatus = (
   if (attention < attentionThreshold && understanding < understandingThreshold)
     return {
       label: "Low Attention & Understanding",
-      color: "bg-gradient-to-br from-[#ffe2e2] to-[#f7f9fa] dark:from-[#4a2626] dark:to-[#2c2c2e] shadow-[4px_4px_18px_0px_rgba(234,56,76,0.07)] dark:shadow-[4px_4px_18px_0px_rgba(234,56,76,0.15)]",
-      pill: "bg-red-400/80 text-white dark:bg-red-600/80"
+      color: "bg-gradient-to-br from-[#ffe2e2] to-[#f7f9fa] shadow-[4px_4px_18px_0px_rgba(234,56,76,0.07)]",
+      pill: "bg-red-400/80 text-white"
     };
   if (attention < attentionThreshold)
     return {
       label: "Low Attention",
-      color: "bg-gradient-to-br from-[#fef6e4] to-[#f7f9fa] dark:from-[#433b27] dark:to-[#2c2c2e] shadow-[4px_4px_14px_0px_rgba(253,202,87,0.08)] dark:shadow-[4px_4px_14px_0px_rgba(253,202,87,0.15)]",
-      pill: "bg-yellow-400/90 text-gray-900 dark:bg-yellow-600/90 dark:text-white"
+      color: "bg-gradient-to-br from-[#fef6e4] to-[#f7f9fa] shadow-[4px_4px_14px_0px_rgba(253,202,87,0.08)]",
+      pill: "bg-yellow-400/90 text-gray-900"
     };
   if (understanding < understandingThreshold)
     return {
       label: "Low Understanding",
-      color: "bg-gradient-to-br from-[#dde9fc] to-[#f7f9fa] dark:from-[#1e2c41] dark:to-[#2c2c2e] shadow-[4px_4px_18px_0px_rgba(75,123,236,0.11)] dark:shadow-[4px_4px_18px_0px_rgba(75,123,236,0.2)]",
-      pill: "bg-blue-400/80 text-white dark:bg-blue-600/80"
+      color: "bg-gradient-to-br from-[#dde9fc] to-[#f7f9fa] shadow-[4px_4px_18px_0px_rgba(75,123,236,0.11)]",
+      pill: "bg-blue-400/80 text-white"
     };
   return {
     label: "Good",
-    color: "bg-gradient-to-br from-[#e1fbee] to-[#f7f9fa] dark:from-[#1d3928] dark:to-[#2c2c2e] shadow-[4px_4px_10px_0px_rgba(71,213,143,0.06)] dark:shadow-[4px_4px_10px_0px_rgba(71,213,143,0.15)]",
-    pill: "bg-green-400/90 text-white dark:bg-green-600/90"
+    color: "bg-gradient-to-br from-[#e1fbee] to-[#f7f9fa] shadow-[4px_4px_10px_0px_rgba(71,213,143,0.06)]",
+    pill: "bg-green-400/90 text-white"
   };
 };
 
@@ -72,14 +72,14 @@ export const PartsToReviewSection: React.FC<PartsToReviewSectionProps> = ({
 
   return (
     <div className={`w-full mt-6 animate-fade-in transition-all ${className}`}>
-      <Card className="rounded-3xl shadow-[0_8px_38px_-10px_rgba(123,104,238,0.10)] dark:shadow-[0_8px_38px_-10px_rgba(123,104,238,0.20)]">
+      <Card className="rounded-3xl shadow-[0_8px_38px_-10px_rgba(123,104,238,0.10)]">
         <CardHeader className="bg-[hsl(var(--attune-light-purple))] text-white pb-3 px-6 rounded-t-3xl">
           <CardTitle className="text-2xl font-bold">Parts to Review</CardTitle>
         </CardHeader>
 
-        <CardContent className="px-3 md:px-6 py-6 bg-white dark:bg-gray-800">
+        <CardContent className="px-3 md:px-6 py-6 bg-white">
           {toReview.length === 0 ? (
-            <div className="flex justify-center items-center min-h-[70px] text-base text-green-700 dark:text-green-400 font-medium">
+            <div className="flex justify-center items-center min-h-[70px] text-base text-green-700 font-medium">
               No parts need review! 🎉
             </div>
           ) : (
@@ -115,13 +115,13 @@ export const PartsToReviewSection: React.FC<PartsToReviewSectionProps> = ({
                             {item.timestamp}
                           </span>
                         </div>
-                        <div className="flex gap-4 items-center text-[13px] text-gray-700 dark:text-gray-300 mb-2">
+                        <div className="flex gap-4 items-center text-[13px] text-gray-700 mb-2">
                           <span>
                             <span className="font-semibold">Attention:</span>{" "}
                             <span
                               className={
                                 item.attention < attentionThreshold
-                                  ? "font-bold text-yellow-700 dark:text-yellow-400"
+                                  ? "font-bold text-yellow-700"
                                   : ""
                               }
                             >
@@ -133,7 +133,7 @@ export const PartsToReviewSection: React.FC<PartsToReviewSectionProps> = ({
                             <span
                               className={
                                 item.understanding < understandingThreshold
-                                  ? "font-bold text-blue-700 dark:text-blue-400"
+                                  ? "font-bold text-blue-700"
                                   : ""
                               }
                             >
@@ -141,7 +141,7 @@ export const PartsToReviewSection: React.FC<PartsToReviewSectionProps> = ({
                             </span>
                           </span>
                         </div>
-                        <div className="bg-white/80 dark:bg-gray-900/80 shadow-inner rounded-xl p-4 text-[15px] text-gray-800 dark:text-gray-200">
+                        <div className="bg-white/80 shadow-inner rounded-xl p-4 text-[15px] text-gray-800">
                           <span className="font-bold text-[hsl(var(--attune-purple))]">What was missed:</span>{" "}
                           {item.transcript}
                         </div>
@@ -163,3 +163,9 @@ export const PartsToReviewSection: React.FC<PartsToReviewSectionProps> = ({
     </div>
   );
 };
+
+// Minimal neumorphic soft and pressed effect helpers
+// Tailwind users: define these in your CSS if you want more control:
+// .neumorphic-soft { box-shadow: 8px 8px 30px #e9e9fb, -8px -8px 25px #ffffff; }
+// .neumorphic-pressed { box-shadow: 2px 2px 10px #e9e9fb inset; }
+

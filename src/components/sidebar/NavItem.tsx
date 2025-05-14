@@ -17,8 +17,8 @@ export function NavItem({ icon, label, href = "/", isActive = false, isRecording
     <Link to={href} className={cn(
       "flex items-center py-3 px-4 rounded-xl my-2 transition-all duration-200 relative",
       isActive 
-        ? "bg-white dark:bg-gray-800 text-[hsl(var(--attune-purple))] shadow-[inset_4px_4px_8px_rgba(0,0,0,0.05),_inset_-4px_-4px_8px_rgba(255,255,255,0.8)] dark:shadow-[inset_4px_4px_8px_rgba(0,0,0,0.2),_inset_-4px_-4px_8px_rgba(255,255,255,0.1)]" 
-        : "bg-gray-50 dark:bg-gray-900 text-gray-700 dark:text-gray-300 shadow-[5px_5px_10px_rgba(0,0,0,0.05),_-5px_-5px_10px_rgba(255,255,255,0.8)] dark:shadow-[5px_5px_10px_rgba(0,0,0,0.3),_-5px_-5px_10px_rgba(255,255,255,0.05)] hover:shadow-[2px_2px_5px_rgba(0,0,0,0.05),_-2px_-2px_5px_rgba(255,255,255,0.8)] dark:hover:shadow-[2px_2px_5px_rgba(0,0,0,0.3),_-2px_-2px_5px_rgba(255,255,255,0.05)] hover:translate-y-[-2px]"
+        ? "bg-white text-[hsl(var(--attune-purple))] shadow-[inset_4px_4px_8px_rgba(0,0,0,0.05),_inset_-4px_-4px_8px_rgba(255,255,255,0.8)]" 
+        : "bg-gray-50 text-gray-700 shadow-[5px_5px_10px_rgba(0,0,0,0.05),_-5px_-5px_10px_rgba(255,255,255,0.8)] hover:shadow-[2px_2px_5px_rgba(0,0,0,0.05),_-2px_-2px_5px_rgba(255,255,255,0.8)] hover:translate-y-[-2px]"
     )}>
       <div className={cn(
         "text-[hsl(var(--attune-purple))]",

@@ -116,19 +116,20 @@ const RecordingPage = () => {
       });
     }, 4000);
 
-    // Simulate transcript generation with the educational content
+    // Simulate transcript generation
     const phrases = [
-      "Good morning, everyone! Today, we're going to learn about how fractions and decimals are related.",
-      "Let's start by remembering what a fraction is. A fraction represents a part of a whole, like 1/2 or 3/4.",
-      "Now, decimals are another way to show parts of a whole, just written differently. For example, 1/2 is the same as 0.5."
+      "I think I understand this concept now.",
+      "Could you explain that part again?",
+      "This makes a lot more sense than before.",
+      "I'm having trouble with this section.",
+      "Oh, I see how that works now!",
+      "Wait, how does this relate to what we learned last week?",
+      "That's an interesting approach to solving the problem."
     ];
     
-    let phraseIndex = 0;
     const transcriptInterval = setInterval(() => {
-      if (phraseIndex < phrases.length) {
-        setTranscript(prev => [...prev, phrases[phraseIndex]]);
-        phraseIndex++;
-      }
+      const randomPhrase = phrases[Math.floor(Math.random() * phrases.length)];
+      setTranscript(prev => [...prev, randomPhrase]);
     }, 3000);
     
     return () => {

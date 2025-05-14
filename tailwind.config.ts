@@ -1,4 +1,3 @@
-
 import type { Config } from "tailwindcss";
 
 export default {
@@ -85,22 +84,11 @@ export default {
 					to: {
 						height: '0'
 					}
-				},
-				'fade-in': {
-					from: { opacity: '0' },
-					to: { opacity: '1' }
 				}
 			},
 			animation: {
 				'accordion-down': 'accordion-down 0.2s ease-out',
-				'accordion-up': 'accordion-up 0.2s ease-out',
-				'fade-in': 'fade-in 0.5s ease-out forwards'
-			},
-			boxShadow: {
-				'neumorphic-light': '5px 5px 15px rgba(0,0,0,0.05), -5px -5px 15px rgba(255,255,255,0.8)',
-				'neumorphic-dark': '5px 5px 15px rgba(0,0,0,0.3), -5px -5px 15px rgba(255,255,255,0.05)',
-				'neumorphic-pressed-light': 'inset 2px 2px 5px rgba(0,0,0,0.05), inset -2px -2px 5px rgba(255,255,255,0.8)',
-				'neumorphic-pressed-dark': 'inset 2px 2px 5px rgba(0,0,0,0.2), inset -2px -2px 5px rgba(255,255,255,0.05)'
+				'accordion-up': 'accordion-up 0.2s ease-out'
 			}
 		}
 	},
